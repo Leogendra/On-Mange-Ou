@@ -59,10 +59,16 @@ main {
 
   border: solid 1px gray;
   border-radius: 2rem;
+
+  cursor: pointer;
 }
 
 .restaurant > h2, .restaurant > h3 {
   margin: 0;
+}
+
+.restaurant.selected {
+  border-color: green;
 }
 
 #map {

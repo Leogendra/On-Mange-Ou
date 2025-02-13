@@ -1,4 +1,4 @@
-import { Location } from "./utils";
+import { Location } from "./location";
 
 export class Restaurant {
 	private _name: string;
@@ -24,7 +24,7 @@ export class Restaurant {
 	}
 }
 
-const RESTAURANTS: Array<Restaurant> = [
+export const all: Array<Restaurant> = [
 	new Restaurant(
 		"Giraya",
 		"22 Pl. du Millénaire, 34000 Montpellier",
@@ -56,4 +56,5 @@ const RESTAURANTS: Array<Restaurant> = [
 		Location.at(43.60877550101456, 3.882493898330213)
 	)
 ];
-export default RESTAURANTS;
+
+export default all;
