@@ -55,6 +55,7 @@ main {
 
 .restaurant {
   padding: 1rem;
+  margin-bottom: 1rem;
 
   border: solid 1px gray;
   border-radius: 2rem;
