@@ -24,10 +24,19 @@ type RandomChooserMapOptions = {
 	};
 };
 
+function wait(timeout: number): Promise<void> {
+	return new Promise((success, _) => {
+		setInterval(success, timeout);
+	});
+}
+
 class RandomChooserMap {
 	private choices: RandomChoices;
 	private options: RandomChooserMapOptions;
 	private map: Leaflet.Map | null = null;
+
+	private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
+	private controlCache: Map<RandomChoice, HTMLElement> = new Map();
 
 	public constructor(
 		choices: RandomChoices,
@@ -37,12 +46,47 @@ class RandomChooserMap {
 		this.options = options ?? {};
 	}
 
+	public async roll() {
+		const randomIndex = Math.floor(Math.random() * this.choices.length);
+
+		for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
+			this.unselectAll();
+			this.selectChoice(i % this.choices.length);
+
+			await wait(50);
+		}
+
+		this.controlCache.get(this.choices[randomIndex])?.click();
+		console.log(
+			"Click on",
+			this.controlCache.get(this.choices[randomIndex])
+		);
+	}
+
+	selectChoice(choice: number | RandomChoice) {
+		if (Number.isInteger(choice)) {
+			choice = this.choices[Number(choice)];
+		}
+
+		this.controlCache
+			.get(choice as RandomChoice)
+			?.classList.add("selected");
+	}
+
+	unselectAll() {
+		for (const control of this.controlCache.values()) {
+			control.classList.remove("selected");
+		}
+	}
+
 	public mountOn(root: HTMLElement | string) {
 		this.map = Leaflet.map(root);
 		this.initOrigin();
 		this.addTileSet();
 		this.addRandomChoiceMarkers();
 		this.addRollControl();
+		this.addRandomChoiceControls();
+		this.addInteractions();
 	}
 
 	initOrigin() {
@@ -72,11 +116,13 @@ class RandomChooserMap {
 	addRandomChoiceMarkers() {
 		if (this.options.style?.randomMarker !== undefined) {
 			for (const choice of this.choices) {
-				this.addMarker(
+				const marker = this.addMarker(
 					choice.location,
 					this.options.style.randomMarker,
 					choice.name
 				);
+
+				this.markerCache.set(choice, marker);
 			}
 		}
 	}
@@ -90,10 +136,53 @@ class RandomChooserMap {
 		button.innerText = this.options.text?.chooseRandom ?? "ROLL !";
 
 		button.addEventListener("click", () => {
-			console.log("ROLLING EYEEEEEEEEES !!!");
+			this.roll();
 		});
 
-		this.addControl(button, "bottomleft");
+		this.addControl(button, "bottomright");
+	}
+
+	addRandomChoiceControls() {
+		const container = document.createElement("aside");
+		container.id = "random-chooser-map-control-choices";
+		container.classList.add("random-chooser-map-control");
+
+		for (const choice of this.choices) {
+			const index = this.choices.indexOf(choice);
+
+			const title = document.createElement("h2");
+			title.innerText = choice.name;
+
+			const description = document.createElement("h3");
+			description.innerText = choice.description;
+
+			const item = document.createElement("div");
+			item.classList.add(
+				"random-chooser-map-control",
+				"random-chooser-map-control-choice"
+			);
+			item.appendChild(title);
+			item.appendChild(description);
+
+			container.appendChild(item);
+
+			if (index !== this.choices.length - 1) {
+				container.appendChild(document.createElement("hr"));
+			}
+
+			this.controlCache.set(choice, item);
+		}
+
+		this.addControl(container, "topright");
+	}
+
+	addInteractions() {
+		for (const [choice, control] of this.controlCache.entries()) {
+			control.addEventListener("click", (e) => {
+				this.markerCache.get(choice)?.openPopup();
+				e.stopPropagation();
+			});
+		}
 	}
 
 	addMarker(
