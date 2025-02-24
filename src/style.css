@@ -1,8 +1,3 @@
-@font-face {
-  font-family: "Copyduck";
-  src: url("/Copyduck.ttf");
-}
-
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -12,93 +7,86 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
 
-h1, h2 {
-  font-family: "Copyduck";
+  --primary-color: #A7BF4E;
+  --secondary-color: #F2AC29;
+  --accent-color: #F24535;
+  --shake-intensity: 2px
 }
 
 html, body {
   margin: 0;
   padding: 0;
 
-  width: 100%;
-  height: 100%;
-}
-
-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-h1 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 15vh;
-
-  margin: 0;
-}
-
-main {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-
-  width: 98%;
-  height: 85vh;
-  overflow: hidden;
-
-  padding: 1rem;
-}
-
-#restaurants {
-  display: flex;
-  flex-direction: column;
-
-  width: 50%;
-  height: 100%;
-  overflow-y: auto;
-
-  padding: 1rem;
-}
-
-.restaurant {
-  padding: 1rem;
-  margin-bottom: 1rem;
-
-  border: solid 1px gray;
-  border-radius: 2rem;
-  box-shadow: rgba(0, 0, 0, 0.2) 0 0 8px;
-
-  cursor: pointer;
-}
-
-.restaurant > h2, .restaurant > h3 {
-  margin: 0;
-}
-
-.restaurant:hover {
-  box-shadow: rgba(0, 0, 0, 0.33) 0 0 8px;
-}
-
-.restaurant:active {
-  box-shadow: none;
-}
-
-.restaurant.selected {
-  box-shadow: rgba(0, 255, 0, 0.33) 0 0 8px;
+  width: 100vw;
+  height: 100vh;
 }
 
 #map {
-  aspect-ratio: 1;
-  width: auto;
+  width: 100%;
   height: 100%;
-  
-  border: solid 1px gray;
-  border-radius: 2rem;
-  box-shadow: rgba(0, 0, 0, 0.2) 0 0 8px;
+}
+
+#random-chooser-map-control-roll {
+  padding: 1rem 2rem;
+
+  background-color: var(--accent-color);
+  border: none;
+  border-radius: 3rem;
+
+  color: #EEF2D0;
+  font-size: xx-large;
+
+  cursor: pointer;
+  transition: all;
+}
+
+#random-chooser-map-control-roll:hover {
+animation-name: excited;
+  animation-duration: 100ms;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+#random-chooser-map-control-roll:active {
+  animation-play-state: paused;
+  transform: scale(0.9);
+}
+
+@keyframes excited {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  12% {
+    transform: translate(calc(-1 * var(--shake-intensity)), calc(-1 * var(--shake-intensity)));
+  }
+
+  24% {
+    transform: translate(var(--shake-intensity), var(--shake-intensity));
+  }
+
+  36% {
+    transform: translate(0, calc(-1 * var(--shake-intensity)));
+  }
+
+  48% {
+    transform: translate(0, var(--shake-intensity));
+  }
+
+  60% {
+    transform: translate(calc(-1 * var(--shake-intensity)), 0);
+  }
+
+  72% {
+    transform: translate(var(--shake-intensity), 0)
+  }
+
+  84% {
+    transform: translate(calc(-1 * var(--shake-intensity)), var(--shake-intensity));
+  }
+
+  96% {
+    transform: translate(var(--shake-intensity), calc(-1 * var(--shake-intensity)));
+  }
 }

@@ -1,14 +1,15 @@
 import { Location } from "./location";
+import { RandomChoice } from "./RandomChooserMap";
 
-export class Restaurant {
+export class Restaurant implements RandomChoice {
 	private _name: string;
 	private _location: Location;
-	private _address: string;
+	private _description: string;
 
 	public constructor(name: string, address: string, location: Location) {
 		this._name = name;
 		this._location = location;
-		this._address = address;
+		this._description = address;
 	}
 
 	public get name(): string {
@@ -19,8 +20,8 @@ export class Restaurant {
 		return this._location;
 	}
 
-	public get address(): string {
-		return this._address;
+	public get description(): string {
+		return this._description;
 	}
 }
 
@@ -54,6 +55,11 @@ export const all: Array<Restaurant> = [
 		"Cuisine S",
 		"All. Jules Milhau, 34000 Montpellier",
 		Location.at(43.60877550101456, 3.882493898330213)
+	),
+	new Restaurant(
+		"Il Pizzaiolo",
+		"14 Rue Boussairolles, 34000 Montpellier",
+		Location.at(43.60778300026146, 3.881181364013143)
 	)
 ];
 
