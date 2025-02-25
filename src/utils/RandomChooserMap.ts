@@ -106,7 +106,7 @@ class RandomChooserMap {
 			"https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
 			{
 				attribution:
-					'données © <a href="//osm.org/copyright">OpenStreetMap</a>/ODbL - rendu <a href="//openstreetmap.fr">OSM France</a>',
+					'&copy; Tiles made by <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
 				minZoom: 1,
 				maxZoom: 20
 			}
