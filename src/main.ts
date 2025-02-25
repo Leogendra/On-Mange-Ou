@@ -15,5 +15,8 @@ new RandomChooserMap(RESTAURANTS, {
 		originMarker: PERSON_ICON,
 		randomMarker: RESTAURANT_ICON,
 		markerSize: 64
+	},
+	text: {
+		rollAction: "On mange où ?"
 	}
 }).mountOn("map");

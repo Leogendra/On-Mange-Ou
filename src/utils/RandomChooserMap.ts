@@ -20,7 +20,7 @@ type RandomChooserMapOptions = {
 		randomMarker?: string;
 	};
 	text?: {
-		chooseRandom?: string;
+		rollAction?: string;
 	};
 };
 
@@ -133,7 +133,7 @@ class RandomChooserMap {
 		button.id = "random-chooser-map-control-roll";
 		button.classList.add("random-chooser-map-control");
 
-		button.innerText = this.options.text?.chooseRandom ?? "ROLL !";
+		button.innerText = this.options.text?.rollAction ?? "ROLL !";
 
 		button.addEventListener("click", () => {
 			this.roll();
