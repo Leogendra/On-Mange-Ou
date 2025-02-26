@@ -22,6 +22,7 @@ type RandomChooserMapOptions = {
 	};
 	text?: {
 		rollAction?: string;
+		resetAction?: string;
 	};
 };
 
@@ -32,6 +33,8 @@ function wait(timeout: number): Promise<void> {
 }
 
 class RandomChooserMap {
+	private static readonly WEIGHTS_STORAGE_KEY = "weights";
+
 	private choices: RandomChoices;
 	private options: RandomChooserMapOptions;
 	private map: Leaflet.Map | null = null;
@@ -71,6 +74,7 @@ class RandomChooserMap {
 		this.addTileSet();
 		this.addRandomChoiceMarkers();
 		this.addRollControl();
+		this.addResetControl();
 		this.addRandomChoiceControls();
 		this.addInteractions();
 	}
@@ -126,6 +130,21 @@ class RandomChooserMap {
 		});
 
 		this.addControl(button, "bottomright");
+	}
+
+	private addResetControl() {
+		const button = document.createElement("button");
+
+		button.id = "random-chooser-map-control-reset";
+		button.classList.add("random-chooser-map-control");
+
+		button.innerText = this.options.text?.resetAction ?? "Reset";
+
+		button.addEventListener("click", () => {
+			this.resetWeights();
+		});
+
+		this.addControl(button, "bottomleft");
 	}
 
 	private addRandomChoiceControls() {
@@ -224,7 +243,9 @@ class RandomChooserMap {
 		items: Set<RandomChoice>
 	): WeightedSet<RandomChoice> {
 		const weights: WeightedSet<RandomChoice> = new Set();
-		const rawWeights = localStorage.getItem("weights");
+		const rawWeights = localStorage.getItem(
+			RandomChooserMap.WEIGHTS_STORAGE_KEY
+		);
 
 		for (const item of items) {
 			weights.add({
@@ -251,7 +272,9 @@ class RandomChooserMap {
 	}
 
 	private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
-		const rawWeights = localStorage.getItem("weights");
+		const rawWeights = localStorage.getItem(
+			RandomChooserMap.WEIGHTS_STORAGE_KEY
+		);
 		let weights: {
 			[key: string]: number;
 		} = {};
@@ -282,7 +305,14 @@ class RandomChooserMap {
 			}
 		}
 
-		localStorage.setItem("weights", JSON.stringify(weights));
+		localStorage.setItem(
+			RandomChooserMap.WEIGHTS_STORAGE_KEY,
+			JSON.stringify(weights)
+		);
+	}
+
+	private resetWeights() {
+		localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
 	}
 }
 

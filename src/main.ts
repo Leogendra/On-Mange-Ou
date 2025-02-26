@@ -17,6 +17,7 @@ new RandomChooserMap(RESTAURANTS, {
 		markerSize: 64
 	},
 	text: {
-		rollAction: "On mange où ?"
+		rollAction: "On mange où ?",
+		resetAction: "⚠️ Réinitialiser"
 	}
 }).mountOn("map");
