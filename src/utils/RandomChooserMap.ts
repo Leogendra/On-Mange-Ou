@@ -1,5 +1,6 @@
 import Leaflet from "leaflet";
 import { Location } from "./location";
+import * as NamedRandom from "./named-random";
 
 export interface RandomChoice {
 	name: string;
@@ -47,7 +48,11 @@ class RandomChooserMap {
 	}
 
 	public async roll() {
-		const randomIndex = Math.floor(Math.random() * this.choices.length);
+		const choicesSet = new Set(this.choices);
+		const randomChoice = NamedRandom.random(
+			NamedRandom.recoverSavedWeights(choicesSet)
+		);
+		const randomIndex = this.choices.indexOf(randomChoice);
 
 		for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
 			this.unselectAll();
@@ -57,10 +62,7 @@ class RandomChooserMap {
 		}
 
 		this.controlCache.get(this.choices[randomIndex])?.click();
-		console.log(
-			"Click on",
-			this.controlCache.get(this.choices[randomIndex])
-		);
+		NamedRandom.updateWeight(choicesSet, randomChoice);
 	}
 
 	selectChoice(choice: number | RandomChoice) {
