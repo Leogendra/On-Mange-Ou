@@ -27,7 +27,7 @@ pnpm run preview
 -   [x] Setup interactive map centered on **Pradeo**
 -   [x] Add restaurant list
 -   [x] Add full random restaurant selection
--   [ ] Add weighting of selection probability based on frequency
+-   [x] Add weighting of selection probability based on frequency
 
 ## 👏 Thanks
 
