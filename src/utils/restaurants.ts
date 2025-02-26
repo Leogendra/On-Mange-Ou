@@ -1,5 +1,5 @@
 import { Location } from "./location";
-import { RandomChoice } from "./RandomChooserMap";
+import { RandomChoice } from "../RandomChooserMap";
 
 export class Restaurant implements RandomChoice {
 	private _name: string;

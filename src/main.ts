@@ -4,7 +4,7 @@ import RESTAURANT_ICON from "./assets/restaurant.png";
 
 import { Location } from "./utils/location";
 import RESTAURANTS from "./utils/restaurants";
-import RandomChooserMap from "./utils/RandomChooserMap";
+import RandomChooserMap from "./RandomChooserMap";
 
 new RandomChooserMap(RESTAURANTS, {
 	view: {

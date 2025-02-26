@@ -1,6 +1,6 @@
 import Leaflet from "leaflet";
-import { Location } from "./location";
-import * as NamedRandom from "./named-random";
+import { Location } from "./utils/location";
+import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 export interface RandomChoice {
 	name: string;
@@ -49,8 +49,8 @@ class RandomChooserMap {
 
 	public async roll() {
 		const choicesSet = new Set(this.choices);
-		const randomChoice = NamedRandom.random(
-			NamedRandom.recoverSavedWeights(choicesSet)
+		const randomChoice = weightedRandom(
+			this.recoverSavedWeights(choicesSet)
 		);
 		const randomIndex = this.choices.indexOf(randomChoice);
 
@@ -62,23 +62,7 @@ class RandomChooserMap {
 		}
 
 		this.controlCache.get(this.choices[randomIndex])?.click();
-		NamedRandom.updateWeight(choicesSet, randomChoice);
-	}
-
-	selectChoice(choice: number | RandomChoice) {
-		if (Number.isInteger(choice)) {
-			choice = this.choices[Number(choice)];
-		}
-
-		this.controlCache
-			.get(choice as RandomChoice)
-			?.classList.add("selected");
-	}
-
-	unselectAll() {
-		for (const control of this.controlCache.values()) {
-			control.classList.remove("selected");
-		}
+		this.updateWeight(choicesSet, randomChoice);
 	}
 
 	public mountOn(root: HTMLElement | string) {
@@ -91,7 +75,7 @@ class RandomChooserMap {
 		this.addInteractions();
 	}
 
-	initOrigin() {
+	private initOrigin() {
 		if (this.options.view !== undefined) {
 			const origin = this.options.view.origin ?? Location.at(0, 0);
 
@@ -103,7 +87,7 @@ class RandomChooserMap {
 		}
 	}
 
-	addTileSet() {
+	private addTileSet() {
 		Leaflet.tileLayer(
 			"https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
 			{
@@ -115,7 +99,7 @@ class RandomChooserMap {
 		).addTo(this.map!);
 	}
 
-	addRandomChoiceMarkers() {
+	private addRandomChoiceMarkers() {
 		if (this.options.style?.randomMarker !== undefined) {
 			for (const choice of this.choices) {
 				const marker = this.addMarker(
@@ -129,7 +113,7 @@ class RandomChooserMap {
 		}
 	}
 
-	addRollControl() {
+	private addRollControl() {
 		const button = document.createElement("button");
 
 		button.id = "random-chooser-map-control-roll";
@@ -144,7 +128,7 @@ class RandomChooserMap {
 		this.addControl(button, "bottomright");
 	}
 
-	addRandomChoiceControls() {
+	private addRandomChoiceControls() {
 		const container = document.createElement("aside");
 		container.id = "random-chooser-map-control-choices";
 		container.classList.add("random-chooser-map-control");
@@ -178,7 +162,7 @@ class RandomChooserMap {
 		this.addControl(container, "topright");
 	}
 
-	addInteractions() {
+	private addInteractions() {
 		for (const [choice, control] of this.controlCache.entries()) {
 			control.addEventListener("click", (e) => {
 				this.markerCache.get(choice)?.openPopup();
@@ -187,7 +171,7 @@ class RandomChooserMap {
 		}
 	}
 
-	addMarker(
+	private addMarker(
 		location: Location,
 		image: string,
 		message: string | undefined = undefined
@@ -209,7 +193,7 @@ class RandomChooserMap {
 		return marker;
 	}
 
-	addControl(
+	private addControl(
 		element: HTMLElement,
 		position: Leaflet.ControlPosition
 	): Leaflet.Control {
@@ -218,6 +202,87 @@ class RandomChooserMap {
 		});
 		const control = new ExtendedControl({ position }).addTo(this.map!);
 		return control;
+	}
+
+	private selectChoice(choice: number | RandomChoice) {
+		if (Number.isInteger(choice)) {
+			choice = this.choices[Number(choice)];
+		}
+
+		this.controlCache
+			.get(choice as RandomChoice)
+			?.classList.add("selected");
+	}
+
+	private unselectAll() {
+		for (const control of this.controlCache.values()) {
+			control.classList.remove("selected");
+		}
+	}
+
+	private recoverSavedWeights(
+		items: Set<RandomChoice>
+	): WeightedSet<RandomChoice> {
+		const weights: WeightedSet<RandomChoice> = new Set();
+		const rawWeights = localStorage.getItem("weights");
+
+		for (const item of items) {
+			weights.add({
+				value: item,
+				weight: 1
+			});
+		}
+
+		if (rawWeights !== null) {
+			const savedWeights = JSON.parse(rawWeights) as {
+				[key: string]: number;
+			};
+
+			for (const [name, weight] of Object.entries(savedWeights)) {
+				for (const item of weights) {
+					if (item.value.name === name) {
+						item.weight = weight;
+					}
+				}
+			}
+		}
+
+		return weights;
+	}
+
+	private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
+		const rawWeights = localStorage.getItem("weights");
+		let weights: {
+			[key: string]: number;
+		} = {};
+
+		if (rawWeights !== null) {
+			const savedWeights: {
+				[key: string]: number | undefined;
+			} = JSON.parse(rawWeights);
+
+			for (const item of items) {
+				if (savedWeights[item.name] === undefined) {
+					weights[item.name] = 1;
+				} else {
+					weights[item.name] = savedWeights[item.name]!;
+				}
+			}
+		} else {
+			for (const item of items) {
+				weights[item.name] = 1;
+			}
+		}
+
+		for (const [name, weight] of Object.entries(weights)) {
+			if (decrement.name === name) {
+				weights[name] = weight - 1;
+			} else {
+				weights[name] = weight + 2;
+			}
+		}
+
+		localStorage.setItem("weights", JSON.stringify(weights));
 	}
 }
 
