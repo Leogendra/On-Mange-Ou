@@ -60,6 +60,11 @@ export const all: Array<Restaurant> = [
 		"Il Pizzaiolo",
 		"14 Rue Boussairolles, 34000 Montpellier",
 		Location.at(43.60778300026146, 3.881181364013143)
+	),
+	new Restaurant(
+		"Takô Sushi",
+		"150 Rue de Crète, 34000 Montpellier",
+		Location.at(43.60919905630271, 3.8901257966708775)
 	)
 ];
 
