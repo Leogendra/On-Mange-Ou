@@ -65,6 +65,16 @@ export const all: Array<Restaurant> = [
 		"Takô Sushi",
 		"150 Rue de Crète, 34000 Montpellier",
 		Location.at(43.60919905630271, 3.8901257966708775)
+	),
+	new Restaurant(
+		"Kuma-ï Sushi",
+		"16 Rue Boussairolles, 34000 Montpellier",
+		Location.at(43.607645389549354, 3.881336059936078)
+	),
+	new Restaurant(
+		"Tiger Noodles",
+		"11 Pl. du Millénaire, 34000 Montpellier",
+		Location.at(43.60830961926281, 3.8890656772043446)
 	)
 ];
 
