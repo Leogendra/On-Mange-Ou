@@ -151,6 +151,12 @@ class RandomChooserMap {
 		const container = document.createElement("aside");
 		container.id = "random-chooser-map-control-choices";
 		container.classList.add("random-chooser-map-control");
+		container.addEventListener("wheel", (e) =>
+			e.stopImmediatePropagation()
+		);
+		container.addEventListener("scroll", (e) =>
+			e.stopImmediatePropagation()
+		);
 
 		for (const choice of this.choices) {
 			const index = this.choices.indexOf(choice);

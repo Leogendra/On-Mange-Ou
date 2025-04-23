@@ -2,5 +2,5 @@ tabWidth: 4
 useTabs: true
 semi: true
 singleQuote: false
-quoteProps: 'consistent'
-trailingComma: 'none'
+quoteProps: "consistent"
+trailingComma: "none"
