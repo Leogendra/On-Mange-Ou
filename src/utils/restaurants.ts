@@ -1,81 +1,28 @@
 import { Location } from "./location";
 import { RandomChoice } from "../RandomChooserMap";
+import restaurantsData from "../restaurants.json";
+
 
 export class Restaurant implements RandomChoice {
-	private _name: string;
-	private _location: Location;
-	private _description: string;
+    constructor(
+        private _name: string,
+        private _description: string,
+        private _location: Location
+    ) { }
 
-	public constructor(name: string, address: string, location: Location) {
-		this._name = name;
-		this._location = location;
-		this._description = address;
-	}
-
-	public get name(): string {
-		return this._name;
-	}
-
-	public get location(): Location {
-		return this._location;
-	}
-
-	public get description(): string {
-		return this._description;
-	}
+    get name(): string {
+        return this._name;
+    }
+    get description(): string {
+        return this._description;
+    }
+    get location(): Location {
+        return this._location;
+    }
 }
 
-export const all: Array<Restaurant> = [
-	new Restaurant(
-		"Giraya",
-		"22 Pl. du Millénaire, 34000 Montpellier",
-		Location.at(43.607848623402234, 3.8894554656255598)
-	),
-	new Restaurant(
-		"Grand Slam",
-		"16 Rue Boussairolles, 34000 Montpellier",
-		Location.at(43.60768439445637, 3.8812468082320444)
-	),
-	new Restaurant(
-		"Subway",
-		"4 Rue de Verdun, 34000 Montpellier",
-		Location.at(43.60756628044681, 3.8802459617421103)
-	),
-	new Restaurant(
-		"Thai to Box",
-		"13 Rue de Verdun, 34000 Montpellier",
-		Location.at(43.60722883336906, 3.8807294299039223)
-	),
-	new Restaurant(
-		"Bistro Régent",
-		"26 All. Jules Milhau, 34000 Montpellier",
-		Location.at(43.60919396081588, 3.8819854087880383)
-	),
-	new Restaurant(
-		"Cuisine S",
-		"All. Jules Milhau, 34000 Montpellier",
-		Location.at(43.60877550101456, 3.882493898330213)
-	),
-	new Restaurant(
-		"Il Pizzaiolo",
-		"14 Rue Boussairolles, 34000 Montpellier",
-		Location.at(43.60778300026146, 3.881181364013143)
-	),
-	new Restaurant(
-		"Takô Sushi",
-		"150 Rue de Crète, 34000 Montpellier",
-		Location.at(43.60919905630271, 3.8901257966708775)
-	),
-	new Restaurant(
-		"Kuma-ï Sushi",
-		"16 Rue Boussairolles, 34000 Montpellier",
-		Location.at(43.607645389549354, 3.881336059936078)
-	),
-	new Restaurant(
-		"Tiger Noodles",
-		"11 Pl. du Millénaire, 34000 Montpellier",
-		Location.at(43.60830961926281, 3.8890656772043446)
-	)
-];
+export const all: Restaurant[] = restaurantsData.map(
+    (r) => new Restaurant(r.name, r.address, Location.at(r.location.lat, r.location.long))
+);
 
 export default all;
