@@ -177,9 +177,9 @@ class RandomChooserMap {
 
 			container.appendChild(item);
 
-			if (index !== this.choices.length - 1) {
-				container.appendChild(document.createElement("hr"));
-			}
+			// if (index !== this.choices.length - 1) {
+			// 	container.appendChild(document.createElement("hr"));
+			// }
 
 			this.controlCache.set(choice, item);
 		}
