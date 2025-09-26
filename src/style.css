@@ -148,6 +148,70 @@ body {
     background-color: var(--primary-color);
 }
 
+/* Container pour le titre et le bouton de suppression */
+.random-chooser-map-control-choice-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.random-chooser-map-control-choice-title-container .random-chooser-map-control-choice-title {
+    flex: 1;
+}
+
+/* Bouton de suppression */
+.random-chooser-map-control-choice-delete {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0.7;
+}
+
+.random-chooser-map-control-choice-delete:hover {
+    background-color: #d93025;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.random-chooser-map-control-choice-delete:active {
+    transform: scale(0.9);
+}
+
+/* Masquer le bouton de suppression par défaut, l'afficher au hover */
+.random-chooser-map-control-choice .random-chooser-map-control-choice-delete {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete {
+    opacity: 0.7;
+    transform: scale(1);
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
 /* Styles pour le bouton + */
 #random-chooser-map-control-add {
     width: 3rem;

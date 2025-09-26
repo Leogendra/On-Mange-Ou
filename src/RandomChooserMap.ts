@@ -209,9 +209,25 @@ class RandomChooserMap {
             weightElement.classList.add("random-chooser-map-control-choice-closable");
             weightElement.innerText = `Weight: ${weight}`;
 
+            // Bouton de suppression
+            const deleteButton = document.createElement("button");
+            deleteButton.classList.add("random-chooser-map-control-choice-delete");
+            deleteButton.innerHTML = "×";
+            deleteButton.title = "Supprimer ce restaurant";
+            deleteButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.deleteRestaurant(choice);
+            });
+
+            // Container pour le titre et le bouton de suppression
+            const titleContainer = document.createElement("div");
+            titleContainer.classList.add("random-chooser-map-control-choice-title-container");
+            titleContainer.appendChild(titleElement);
+            titleContainer.appendChild(deleteButton);
+
             const item = document.createElement("div");
             item.classList.add("random-chooser-map-control-choice");
-            item.appendChild(titleElement);
+            item.appendChild(titleContainer);
             item.appendChild(descriptionElement);
             item.appendChild(weightElement);
 
@@ -359,6 +375,36 @@ class RandomChooserMap {
 
     private resetWeights() {
         localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+    }
+
+    private deleteRestaurant(choice: RandomChoice) {
+        // Confirmer la suppression
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer "${choice.name}" ?`)) {
+            return;
+        }
+
+        // Supprimer de la liste des choix
+        const index = this.choices.indexOf(choice);
+        if (index > -1) {
+            this.choices.splice(index, 1);
+        }
+
+        // Supprimer le marqueur de la carte
+        const marker = this.markerCache.get(choice);
+        if (marker && this.map) {
+            this.map.removeLayer(marker);
+            this.markerCache.delete(choice);
+        }
+
+        // Supprimer du cache des contrôles
+        this.controlCache.delete(choice);
+
+        // Recréer les contrôles pour refléter les changements
+        this.addRandomChoiceControls();
+        this.addInteractions();
+
+        // Mettre à jour la sauvegarde
+        this.saveRestaurantsToStorage();
     }
 
     private createAddRestaurantDialog() {
