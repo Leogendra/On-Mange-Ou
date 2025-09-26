@@ -1,10 +1,10 @@
-# 🍴 OMO
+# 🍴 On Mange Où ?
 
-**OMO** standing for _On Mange Où ?_ is a random restaurant chooser. It's a map presenting a set of restaurant with a big button that select a random one among them.
+**On Mange Où ?** is a random restaurant chooser. It's a map presenting a set of restaurant with a button that select a random one among them.
 
 It's developed in pure _HTML_/_CSS_/_Typescript_ using [**Vite**](https://vite.dev/) as a builder. The project package is managed with [**PNPM**](https://pnpm.io/). The map is done with [**Leaflet**](https://leafletjs.com/) using [**OpenStreetMap France**](https://www.openstreetmap.fr/) tiles.
 
-The project is auto-published using **Gitlab Pages** at [https://omo-60e239.gitlab.io/](https://omo-60e239.gitlab.io/).
+The project is available live at at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
 
 ## 🛠️ Development
 
@@ -24,11 +24,23 @@ pnpm run preview
 
 ## 🛣️ Roadmap
 
--   [x] Setup interactive map centered on **Pradeo**
+-   [x] Setup interactive map
 -   [x] Add restaurant list
 -   [x] Add full random restaurant selection
 -   [x] Add weighting of selection probability based on frequency
+-   [x] Update the restaurant list from a file (JSON, CSV, etc.)
+-   [ ] Improve UI/UX
+-   [ ] Add restaurant details (prices, food type like pizza, sushi, etc.)
+-   [ ] Add restaurant filtering (by price, food type, etc.)
+-   [ ] Add option to hide restaurants before selection
+-   [ ] Add option to add restaurants before selection
+-   [ ] Add option to add restaurants on the map
+-   [ ] Add option to import/export restaurant list
+-   [ ] Add toggle for weighted/random selection
+-   [ ] Display weights on the restaurant list
+-   [x] Add option to reset weights
+-   [ ] Add option to manually set weights
 
 ## 👏 Thanks
 
-Big thanks to [**Dimitri Prestat**](https://github.com/diprestat) for the original idea.
+Big thanks to [**Dimitri Prestat**](https://github.com/diprestat) for the original idea, and [**Louis Parent**](https://gitlab.com/loss2/webapp/omo) for the implementation.

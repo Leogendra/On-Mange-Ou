@@ -3,323 +3,339 @@ import { Location } from "./utils/location";
 import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 export interface RandomChoice {
-	name: string;
-	description: string;
-	location: Location;
+    name: string;
+    description: string;
+    location: Location;
 }
 
 type RandomChoices = Array<RandomChoice>;
 
 type RandomChooserMapOptions = {
-	view?: {
-		origin?: Location;
-		zoom?: number;
-	};
-	style?: {
-		markerSize?: number;
-		originMarker?: string;
-		randomMarker?: string;
-	};
-	text?: {
-		rollAction?: string;
-		resetAction?: string;
-	};
+    view?: {
+        origin?: Location;
+        zoom?: number;
+    };
+    style?: {
+        markerSize?: number;
+        originMarker?: string;
+        randomMarker?: string;
+    };
+    text?: {
+        rollAction?: string;
+        resetAction?: string;
+    };
 };
 
 function wait(timeout: number): Promise<void> {
-	return new Promise((success, _) => {
-		setInterval(success, timeout);
-	});
+    return new Promise((success, _) => {
+        setInterval(success, timeout);
+    });
 }
 
 class RandomChooserMap {
-	private static readonly WEIGHTS_STORAGE_KEY = "weights";
+    private static readonly WEIGHTS_STORAGE_KEY = "weights";
 
-	private choices: RandomChoices;
-	private options: RandomChooserMapOptions;
-	private map: Leaflet.Map | null = null;
+    private choices: RandomChoices;
+    private options: RandomChooserMapOptions;
+    private map: Leaflet.Map | null = null;
 
-	private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
-	private controlCache: Map<RandomChoice, HTMLElement> = new Map();
+    private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
+    private controlCache: Map<RandomChoice, HTMLElement> = new Map();
 
-	public constructor(
-		choices: RandomChoices,
-		options?: RandomChooserMapOptions
-	) {
-		this.choices = choices;
-		this.options = options ?? {};
-	}
+    private alreadyRolled: boolean = false;
 
-	public async roll() {
-		const choicesSet = new Set(this.choices);
-		const randomChoice = weightedRandom(
-			this.recoverSavedWeights(choicesSet)
-		);
-		const randomIndex = this.choices.indexOf(randomChoice);
+    public constructor(
+        choices: RandomChoices,
+        options?: RandomChooserMapOptions
+    ) {
+        this.choices = choices;
+        this.options = options ?? {};
+    }
 
-		for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
-			this.unselectAll();
-			this.selectChoice(i % this.choices.length);
+    public async roll() {
+        const choicesSet = new Set(this.choices);
+        const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
+        const randomIndex = this.choices.indexOf(randomChoice);
 
-			await wait(50);
-		}
+        const restaurantListElements = document.getElementById("random-chooser-map-control-choices");
+        const allClosableElements = document.getElementsByClassName("random-chooser-map-control-choice-closable");
+        if (restaurantListElements && restaurantListElements.scrollHeight > restaurantListElements.clientHeight) {
+            for (let i = 0; i < allClosableElements.length; i++) {
+                (allClosableElements[i] as HTMLElement).classList.add("closed");
+            }
+        }
 
-		this.controlCache.get(this.choices[randomIndex])?.click();
-		this.updateWeight(choicesSet, randomChoice);
-	}
+        const randomRollNumber = Math.floor(Math.random() * 7) + 3;
+        for (let i = 0; i < this.choices.length * randomRollNumber + randomIndex + 1; i++) {
+            this.unselectAll();
+            this.selectChoice(i % this.choices.length);
+            await wait(this.alreadyRolled ? 30 : 100);
+        }
 
-	public mountOn(root: HTMLElement | string) {
-		this.map = Leaflet.map(root);
-		this.initOrigin();
-		this.addTileSet();
-		this.addRandomChoiceMarkers();
-		this.addRollControl();
-		this.addResetControl();
-		this.addRandomChoiceControls();
-		this.addInteractions();
-	}
+        this.controlCache.get(this.choices[randomIndex])?.click();
+        this.updateWeight(choicesSet, randomChoice);
+        this.alreadyRolled = true;
 
-	private initOrigin() {
-		if (this.options.view !== undefined) {
-			const origin = this.options.view.origin ?? Location.at(0, 0);
+        await wait(1000);
+        for (let i = 0; i < allClosableElements.length; i++) {
+            (allClosableElements[i] as HTMLElement).classList.remove("closed");
+        }
+    }
 
-			this.map!.setView(origin.toTuple(), this.options.view.zoom);
+    public mountOn(root: HTMLElement | string) {
+        this.map = Leaflet.map(root);
+        this.initOrigin();
+        this.addTileSet();
+        this.addRandomChoiceMarkers();
+        this.addRollControl();
+        this.addResetControl();
+        this.addRandomChoiceControls();
+        this.addInteractions();
+    }
 
-			if (this.options.style?.originMarker !== undefined) {
-				this.addMarker(origin, this.options.style.originMarker);
-			}
-		}
-	}
+    private initOrigin() {
+        if (this.options.view !== undefined) {
+            const origin = this.options.view.origin ?? Location.at(0, 0);
 
-	private addTileSet() {
-		Leaflet.tileLayer(
-			"https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
-			{
-				attribution:
-					'&copy; Tiles made by <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
-				minZoom: 1,
-				maxZoom: 20
-			}
-		).addTo(this.map!);
-	}
+            this.map!.setView(origin.toTuple(), this.options.view.zoom);
 
-	private addRandomChoiceMarkers() {
-		if (this.options.style?.randomMarker !== undefined) {
-			for (const choice of this.choices) {
-				const marker = this.addMarker(
-					choice.location,
-					this.options.style.randomMarker,
-					choice.name
-				);
+            if (this.options.style?.originMarker !== undefined) {
+                this.addMarker(origin, this.options.style.originMarker);
+            }
+        }
+    }
 
-				this.markerCache.set(choice, marker);
-			}
-		}
-	}
+    private addTileSet() {
+        Leaflet.tileLayer(
+            "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    '&copy; <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
+                minZoom: 1,
+                maxZoom: 20
+            }
+        ).addTo(this.map!);
+    }
 
-	private addRollControl() {
-		const button = document.createElement("button");
+    private addRandomChoiceMarkers() {
+        if (this.options.style?.randomMarker !== undefined) {
+            for (const choice of this.choices) {
+                const marker = this.addMarker(
+                    choice.location,
+                    this.options.style.randomMarker,
+                    choice.name
+                );
 
-		button.id = "random-chooser-map-control-roll";
-		button.classList.add("random-chooser-map-control");
+                this.markerCache.set(choice, marker);
+            }
+        }
+    }
 
-		button.innerText = this.options.text?.rollAction ?? "ROLL !";
+    private addRollControl() {
+        const button = document.createElement("button");
 
-		button.addEventListener("click", () => {
-			this.roll();
-		});
+        button.id = "random-chooser-map-control-roll";
 
-		this.addControl(button, "bottomright");
-	}
+        button.innerText = this.options.text?.rollAction ?? "ROLL !";
 
-	private addResetControl() {
-		const button = document.createElement("button");
+        button.addEventListener("click", () => {
+            this.roll();
+        });
 
-		button.id = "random-chooser-map-control-reset";
-		button.classList.add("random-chooser-map-control");
+        this.addControl(button, "bottomright");
+    }
 
-		button.innerText = this.options.text?.resetAction ?? "Reset";
+    private addResetControl() {
+        const button = document.createElement("button");
 
-		button.addEventListener("click", () => {
-			this.resetWeights();
-		});
+        button.id = "random-chooser-map-control-reset";
 
-		this.addControl(button, "bottomleft");
-	}
+        button.innerText = this.options.text?.resetAction ?? "Reset";
 
-	private addRandomChoiceControls() {
-		const container = document.createElement("aside");
-		container.id = "random-chooser-map-control-choices";
-		container.classList.add("random-chooser-map-control");
-		container.addEventListener("wheel", (e) =>
-			e.stopImmediatePropagation()
-		);
-		container.addEventListener("scroll", (e) =>
-			e.stopImmediatePropagation()
-		);
+        button.addEventListener("click", () => {
+            this.resetWeights();
+        });
 
-		for (const choice of this.choices) {
-			// const index = this.choices.indexOf(choice);
+        this.addControl(button, "bottomleft");
+    }
 
-			const title = document.createElement("h2");
-			title.innerText = choice.name;
+    private addRandomChoiceControls() {
+        const existing = document.getElementById("random-chooser-map-control-choices");
+        if (existing !== null) { existing.remove(); }
 
-			const description = document.createElement("h3");
-			description.innerText = choice.description;
+        const container = document.createElement("aside");
+        container.id = "random-chooser-map-control-choices";
+        container.addEventListener("wheel", (e) => e.stopImmediatePropagation());
+        container.addEventListener("scroll", (e) => e.stopImmediatePropagation());
 
-			const item = document.createElement("div");
-			item.classList.add(
-				"random-chooser-map-control",
-				"random-chooser-map-control-choice"
-			);
-			item.appendChild(title);
-			item.appendChild(description);
+        for (const choice of this.choices) {
+            const weight = this.recoverSavedWeights(new Set([choice])).values().next().value?.weight;
 
-			container.appendChild(item);
+            const titleElement = document.createElement("h2");
+            titleElement.classList.add("random-chooser-map-control-choice-title");
+            titleElement.innerText = choice.name;
 
-			// if (index !== this.choices.length - 1) {
-			// 	container.appendChild(document.createElement("hr"));
-			// }
+            const descriptionElement = document.createElement("h3");
+            descriptionElement.classList.add("random-chooser-map-control-choice-description");
+            descriptionElement.classList.add("random-chooser-map-control-choice-closable");
+            descriptionElement.innerText = choice.description;
 
-			this.controlCache.set(choice, item);
-		}
+            const weightElement = document.createElement("h3");
+            weightElement.classList.add("random-chooser-map-control-choice-weight");
+            weightElement.classList.add("random-chooser-map-control-choice-closable");
+            weightElement.innerText = `Weight: ${weight}`;
 
-		this.addControl(container, "topright");
-	}
+            const item = document.createElement("div");
+            item.classList.add("random-chooser-map-control-choice");
+            item.appendChild(titleElement);
+            item.appendChild(descriptionElement);
+            item.appendChild(weightElement);
 
-	private addInteractions() {
-		for (const [choice, control] of this.controlCache.entries()) {
-			control.addEventListener("click", (e) => {
-				this.markerCache.get(choice)?.openPopup();
-				e.stopPropagation();
-			});
-		}
-	}
+            container.appendChild(item);
 
-	private addMarker(
-		location: Location,
-		image: string,
-		message: string | undefined = undefined
-	): Leaflet.Marker {
-		const markerSize = this.options.style?.markerSize ?? 16;
+            // const index = this.choices.indexOf(choice);
+            // if (index !== this.choices.length - 1) {
+            // 	container.appendChild(document.createElement("hr"));
+            // }
 
-		const marker = Leaflet.marker(location.toTuple(), {
-			icon: Leaflet.icon({
-				iconUrl: image,
-				iconSize: [markerSize, markerSize],
-				popupAnchor: [0, -markerSize / 2]
-			})
-		}).addTo(this.map!);
+            this.controlCache.set(choice, item);
+        }
 
-		if (message !== undefined) {
-			marker.bindPopup(message);
-		}
+        this.addControl(container, "topright");
+    }
 
-		return marker;
-	}
+    private addInteractions() {
+        for (const [choice, control] of this.controlCache.entries()) {
+            control.addEventListener("click", (e) => {
+                this.markerCache.get(choice)?.openPopup();
+                e.stopPropagation();
+            });
+        }
+    }
 
-	private addControl(
-		element: HTMLElement,
-		position: Leaflet.ControlPosition
-	): Leaflet.Control {
-		const ExtendedControl = Leaflet.Control.extend({
-			onAdd: (_: any) => element
-		});
-		const control = new ExtendedControl({ position }).addTo(this.map!);
-		return control;
-	}
+    private addMarker(
+        location: Location,
+        image: string,
+        message: string | undefined = undefined
+    ): Leaflet.Marker {
+        const markerSize = this.options.style?.markerSize ?? 16;
 
-	private selectChoice(choice: number | RandomChoice) {
-		if (Number.isInteger(choice)) {
-			choice = this.choices[Number(choice)];
-		}
+        const marker = Leaflet.marker(location.toTuple(), {
+            icon: Leaflet.icon({
+                iconUrl: image,
+                iconSize: [markerSize, markerSize],
+                popupAnchor: [0, -markerSize / 2]
+            })
+        }).addTo(this.map!);
 
-		this.controlCache
-			.get(choice as RandomChoice)
-			?.classList.add("selected");
-	}
+        if (message !== undefined) {
+            marker.bindPopup(message);
+        }
 
-	private unselectAll() {
-		for (const control of this.controlCache.values()) {
-			control.classList.remove("selected");
-		}
-	}
+        return marker;
+    }
 
-	private recoverSavedWeights(
-		items: Set<RandomChoice>
-	): WeightedSet<RandomChoice> {
-		const weights: WeightedSet<RandomChoice> = new Set();
-		const rawWeights = localStorage.getItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY
-		);
+    private addControl(
+        element: HTMLElement,
+        position: Leaflet.ControlPosition
+    ): Leaflet.Control {
+        const ExtendedControl = Leaflet.Control.extend({
+            onAdd: (_: any) => element
+        });
+        const control = new ExtendedControl({ position }).addTo(this.map!);
+        return control;
+    }
 
-		for (const item of items) {
-			weights.add({
-				value: item,
-				weight: 1
-			});
-		}
+    private selectChoice(choice: number | RandomChoice) {
+        if (Number.isInteger(choice)) {
+            choice = this.choices[Number(choice)];
+        }
 
-		if (rawWeights !== null) {
-			const savedWeights = JSON.parse(rawWeights) as {
-				[key: string]: number;
-			};
+        this.controlCache
+            .get(choice as RandomChoice)
+            ?.classList.add("selected");
+    }
 
-			for (const [name, weight] of Object.entries(savedWeights)) {
-				for (const item of weights) {
-					if (item.value.name === name) {
-						item.weight = weight;
-					}
-				}
-			}
-		}
+    private unselectAll() {
+        for (const control of this.controlCache.values()) {
+            control.classList.remove("selected");
+        }
+    }
 
-		return weights;
-	}
+    private recoverSavedWeights(
+        items: Set<RandomChoice>
+    ): WeightedSet<RandomChoice> {
+        const weights: WeightedSet<RandomChoice> = new Set();
+        const rawWeights = localStorage.getItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY
+        );
 
-	private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
-		const rawWeights = localStorage.getItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY
-		);
-		let weights: {
-			[key: string]: number;
-		} = {};
+        for (const item of items) {
+            weights.add({
+                value: item,
+                weight: 1
+            });
+        }
 
-		if (rawWeights !== null) {
-			const savedWeights: {
-				[key: string]: number | undefined;
-			} = JSON.parse(rawWeights);
+        if (rawWeights !== null) {
+            const savedWeights = JSON.parse(rawWeights) as {
+                [key: string]: number;
+            };
 
-			for (const item of items) {
-				if (savedWeights[item.name] === undefined) {
-					weights[item.name] = 1;
-				} else {
-					weights[item.name] = savedWeights[item.name]!;
-				}
-			}
-		} else {
-			for (const item of items) {
-				weights[item.name] = 1;
-			}
-		}
+            for (const [name, weight] of Object.entries(savedWeights)) {
+                for (const item of weights) {
+                    if (item.value.name === name) {
+                        item.weight = weight;
+                    }
+                }
+            }
+        }
 
-		for (const [name, weight] of Object.entries(weights)) {
-			if (decrement.name === name) {
-				weights[name] = weight - 1;
-			} else {
-				weights[name] = weight + 2;
-			}
-		}
+        return weights;
+    }
 
-		localStorage.setItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY,
-			JSON.stringify(weights)
-		);
-	}
+    private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
+        const rawWeights = localStorage.getItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY
+        );
+        let weights: {
+            [key: string]: number;
+        } = {};
 
-	private resetWeights() {
-		localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
-	}
+        if (rawWeights !== null) {
+            const savedWeights: {
+                [key: string]: number | undefined;
+            } = JSON.parse(rawWeights);
+
+            for (const item of items) {
+                if (savedWeights[item.name] === undefined) {
+                    weights[item.name] = 1;
+                }
+                else {
+                    weights[item.name] = savedWeights[item.name]!;
+                }
+            }
+        }
+        else {
+            for (const item of items) {
+                weights[item.name] = 1;
+            }
+        }
+
+        for (const [name, weight] of Object.entries(weights)) {
+            if (decrement.name === name) { weights[name] = weight - 2; }
+            else { weights[name] = weight + 1; }
+        }
+
+        localStorage.setItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY,
+            JSON.stringify(weights)
+        );
+    }
+
+    private resetWeights() {
+        localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+    }
 }
 
 export default RandomChooserMap;
