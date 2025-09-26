@@ -42,6 +42,8 @@ class RandomChooserMap {
     private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
     private controlCache: Map<RandomChoice, HTMLElement> = new Map();
 
+    private alreadyRolled: boolean = false;
+
     public constructor(
         choices: RandomChoices,
         options?: RandomChooserMapOptions
@@ -55,14 +57,29 @@ class RandomChooserMap {
         const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
         const randomIndex = this.choices.indexOf(randomChoice);
 
-        for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
+        const restaurantListElements = document.getElementById("random-chooser-map-control-choices");
+        const allClosableElements = document.getElementsByClassName("random-chooser-map-control-choice-closable");
+        if (restaurantListElements && restaurantListElements.scrollHeight > restaurantListElements.clientHeight) {
+            for (let i = 0; i < allClosableElements.length; i++) {
+                (allClosableElements[i] as HTMLElement).classList.add("closed");
+            }
+        }
+
+        const randomRollNumber = Math.floor(Math.random() * 7) + 3;
+        for (let i = 0; i < this.choices.length * randomRollNumber + randomIndex + 1; i++) {
             this.unselectAll();
             this.selectChoice(i % this.choices.length);
-            await wait(50);
+            await wait(this.alreadyRolled ? 30 : 100);
         }
 
         this.controlCache.get(this.choices[randomIndex])?.click();
         this.updateWeight(choicesSet, randomChoice);
+        this.alreadyRolled = true;
+
+        await wait(1000);
+        for (let i = 0; i < allClosableElements.length; i++) {
+            (allClosableElements[i] as HTMLElement).classList.remove("closed");
+        }
     }
 
     public mountOn(root: HTMLElement | string) {
@@ -153,14 +170,19 @@ class RandomChooserMap {
 
         for (const choice of this.choices) {
             const weight = this.recoverSavedWeights(new Set([choice])).values().next().value?.weight;
-            
+
             const titleElement = document.createElement("h2");
+            titleElement.classList.add("random-chooser-map-control-choice-title");
             titleElement.innerText = choice.name;
-            
+
             const descriptionElement = document.createElement("h3");
+            descriptionElement.classList.add("random-chooser-map-control-choice-description");
+            descriptionElement.classList.add("random-chooser-map-control-choice-closable");
             descriptionElement.innerText = choice.description;
-            
+
             const weightElement = document.createElement("h3");
+            weightElement.classList.add("random-chooser-map-control-choice-weight");
+            weightElement.classList.add("random-chooser-map-control-choice-closable");
             weightElement.innerText = `Weight: ${weight}`;
 
             const item = document.createElement("div");
@@ -168,9 +190,9 @@ class RandomChooserMap {
             item.appendChild(titleElement);
             item.appendChild(descriptionElement);
             item.appendChild(weightElement);
-            
+
             container.appendChild(item);
-            
+
             // const index = this.choices.indexOf(choice);
             // if (index !== this.choices.length - 1) {
             // 	container.appendChild(document.createElement("hr"));
@@ -295,14 +317,14 @@ class RandomChooserMap {
             }
         }
         else {
-            for (const item of items) { 
-                weights[item.name] = 1; 
+            for (const item of items) {
+                weights[item.name] = 1;
             }
         }
 
         for (const [name, weight] of Object.entries(weights)) {
-            if (decrement.name === name) { weights[name] = weight - 1; }
-            else { weights[name] = weight + 2; }
+            if (decrement.name === name) { weights[name] = weight - 2; }
+            else { weights[name] = weight + 1; }
         }
 
         localStorage.setItem(
