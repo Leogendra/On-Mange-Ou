@@ -159,7 +159,7 @@ class RandomChooserMap {
 		);
 
 		for (const choice of this.choices) {
-			const index = this.choices.indexOf(choice);
+			// const index = this.choices.indexOf(choice);
 
 			const title = document.createElement("h2");
 			title.innerText = choice.name;
