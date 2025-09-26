@@ -341,3 +341,34 @@ body {
     background-color: #ccc;
     cursor: not-allowed;
 }
+
+/* Menu de réinitialisation */
+.reset-menu {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 200px;
+    overflow: hidden;
+}
+
+.reset-menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.reset-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.reset-menu-item:first-child {
+    border-bottom: 1px solid #eee;
+}

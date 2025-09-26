@@ -34,8 +34,10 @@ function wait(timeout: number): Promise<void> {
 
 class RandomChooserMap {
     private static readonly WEIGHTS_STORAGE_KEY = "weights";
+    private static readonly RESTAURANTS_STORAGE_KEY = "custom-restaurants";
 
     private choices: RandomChoices;
+    private defaultChoices: RandomChoices;
     private options: RandomChooserMapOptions;
     private map: Leaflet.Map | null = null;
 
@@ -48,10 +50,13 @@ class RandomChooserMap {
     private addRestaurantDialog: HTMLDialogElement | null = null;
 
     public constructor(
-        choices: RandomChoices,
+        defaultChoices: RandomChoices,
         options?: RandomChooserMapOptions
     ) {
-        this.choices = choices;
+        // Sauvegarder les restaurants par défaut pour la réinitialisation
+        this.defaultChoices = [...defaultChoices];
+        // Charger les restaurants depuis localStorage ou utiliser ceux par défaut
+        this.choices = this.loadRestaurantsFromStorage(defaultChoices);
         this.options = options ?? {};
     }
 
@@ -156,14 +161,56 @@ class RandomChooserMap {
         const button = document.createElement("button");
 
         button.id = "random-chooser-map-control-reset";
-
         button.innerText = this.options.text?.resetAction ?? "Reset";
 
         button.addEventListener("click", () => {
-            this.resetWeights();
+            this.showResetMenu(button);
         });
 
         this.addControl(button, "bottomleft");
+    }
+
+    private showResetMenu(button: HTMLElement) {
+        // Créer le menu contextuel
+        const menu = document.createElement("div");
+        menu.className = "reset-menu";
+        
+        const resetWeightsOption = document.createElement("button");
+        resetWeightsOption.textContent = "Réinitialiser les poids";
+        resetWeightsOption.className = "reset-menu-item";
+        resetWeightsOption.addEventListener("click", () => {
+            this.resetWeights();
+            document.body.removeChild(menu);
+        });
+
+        const resetRestaurantsOption = document.createElement("button");
+        resetRestaurantsOption.textContent = "Réinitialiser les restaurants";
+        resetRestaurantsOption.className = "reset-menu-item";
+        resetRestaurantsOption.addEventListener("click", () => {
+            this.resetToDefaultRestaurants();
+            document.body.removeChild(menu);
+        });
+
+        menu.appendChild(resetWeightsOption);
+        menu.appendChild(resetRestaurantsOption);
+
+        // Positionner le menu
+        const rect = button.getBoundingClientRect();
+        menu.style.position = "fixed";
+        menu.style.left = rect.right + "px";
+        menu.style.bottom = (window.innerHeight - rect.top) + "px";
+
+        // Ajouter au DOM
+        document.body.appendChild(menu);
+
+        // Fermer le menu si on clique ailleurs
+        const closeMenu = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
+                document.body.removeChild(menu);
+                document.removeEventListener("click", closeMenu);
+            }
+        };
+        setTimeout(() => document.addEventListener("click", closeMenu), 0);
     }
 
     private addAddRestaurantControl() {
@@ -375,6 +422,33 @@ class RandomChooserMap {
 
     private resetWeights() {
         localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+    }
+
+    private resetToDefaultRestaurants() {
+        if (confirm("Êtes-vous sûr de vouloir réinitialiser tous les restaurants aux valeurs par défaut ? Cela supprimera tous les restaurants ajoutés.")) {
+            // Supprimer tous les marqueurs actuels
+            for (const marker of this.markerCache.values()) {
+                if (this.map) {
+                    this.map.removeLayer(marker);
+                }
+            }
+            this.markerCache.clear();
+            this.controlCache.clear();
+
+            // Restaurer la liste par défaut
+            this.choices = [...this.defaultChoices];
+
+            // Supprimer de localStorage pour forcer le rechargement par défaut
+            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+
+            // Recréer tous les marqueurs et contrôles
+            this.addRandomChoiceMarkers();
+            this.addRandomChoiceControls();
+            this.addInteractions();
+
+            // Sauvegarder les restaurants par défaut
+            this.saveRestaurantsToStorage();
+        }
     }
 
     private deleteRestaurant(choice: RandomChoice) {
@@ -686,8 +760,34 @@ class RandomChooserMap {
         this.saveRestaurantsToStorage();
     }
 
+    private loadRestaurantsFromStorage(defaultChoices: RandomChoices): RandomChoices {
+        try {
+            const saved = localStorage.getItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+            if (saved) {
+                const restaurantsData = JSON.parse(saved);
+                return restaurantsData.map((r: any) => ({
+                    name: r.name,
+                    description: r.address,
+                    location: Location.at(r.location.lat, r.location.long)
+                }));
+            }
+        } catch (error) {
+            console.warn('Erreur lors du chargement des restaurants depuis localStorage:', error);
+            // En cas d'erreur, supprimer les données corrompues
+            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+        }
+        
+        // Utiliser les restaurants par défaut et les sauvegarder
+        this.saveRestaurantsToStorageInternal(defaultChoices);
+        return [...defaultChoices];
+    }
+
     private saveRestaurantsToStorage() {
-        const restaurantsData = this.choices.map(choice => ({
+        this.saveRestaurantsToStorageInternal(this.choices);
+    }
+
+    private saveRestaurantsToStorageInternal(choices: RandomChoices) {
+        const restaurantsData = choices.map(choice => ({
             name: choice.name,
             address: choice.description,
             location: {
@@ -695,7 +795,7 @@ class RandomChooserMap {
                 long: choice.location.lon
             }
         }));
-        localStorage.setItem('custom-restaurants', JSON.stringify(restaurantsData));
+        localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(restaurantsData));
     }
 }
 
