@@ -147,3 +147,289 @@ body {
 .random-chooser-map-control-choice.selected {
     background-color: var(--primary-color);
 }
+
+/* Container pour le titre et les boutons d'action */
+.random-chooser-map-control-choice-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.random-chooser-map-control-choice-title-container .random-chooser-map-control-choice-title {
+    flex: 1;
+}
+
+/* Container pour les boutons d'action (masquer et supprimer) */
+.random-chooser-map-control-choice-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Bouton de masquage temporaire */
+.random-chooser-map-control-choice-hide {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    
+    background-color: var(--secondary-color);
+    border: none;
+    border-radius: 50%;
+    
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0.7;
+}
+
+.random-chooser-map-control-choice-hide:hover {
+    background-color: #d4a429;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.random-chooser-map-control-choice-hide:active {
+    transform: scale(0.9);
+}
+
+/* Restaurant masqué temporairement */
+.random-chooser-map-control-choice.hidden-restaurant {
+    opacity: 0.5;
+    background-color: #e0e0e0;
+}
+
+.random-chooser-map-control-choice.hidden-restaurant .random-chooser-map-control-choice-title {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Masquer les boutons d'action par défaut, les afficher au hover */
+.random-chooser-map-control-choice .random-chooser-map-control-choice-actions {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-actions {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Styles spécifiques pour les boutons individuels */
+.random-chooser-map-control-choice .random-chooser-map-control-choice-delete,
+.random-chooser-map-control-choice .random-chooser-map-control-choice-hide {
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete:hover,
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-hide:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Bouton de suppression */
+.random-chooser-map-control-choice-delete {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0.7;
+}
+
+.random-chooser-map-control-choice-delete:hover {
+    background-color: #d93025;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.random-chooser-map-control-choice-delete:active {
+    transform: scale(0.9);
+}
+
+/* Styles pour le bouton + */
+#random-chooser-map-control-add {
+    width: 3rem;
+    height: 3rem;
+
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 50%;
+
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#random-chooser-map-control-add:hover {
+    background-color: #8fa440;
+    transform: scale(1.1);
+}
+
+#random-chooser-map-control-add:active {
+    transform: scale(0.95);
+}
+
+/* Styles pour le dialog */
+#add-restaurant-dialog {
+    width: fit-content;
+    min-width: 400px;
+    padding: 0;
+    border: none;
+    border-radius: 0.8rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+    &::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    form {
+        padding: 1rem 2rem;
+    }
+
+    h2 {
+        margin: 0 0 1.5rem 0;
+        color: var(--accent-color);
+        font-size: 1.5rem;
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    input[type="text"] {
+        width: 200px;
+        padding: 0.8rem;
+        border: 2px solid #ddd;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+}
+
+#location-info {
+    margin: 0.5rem 0 0 0;
+    padding: 0.8rem;
+    background-color: #f8f9fa;
+    border: 2px dashed #ddd;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.dialog-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+}
+
+.dialog-buttons button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#cancel-add {
+    background-color: #6c757d;
+    color: white;
+}
+
+#cancel-add:hover {
+    background-color: #5a6268;
+}
+
+#confirm-add {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#confirm-add:hover:not(:disabled) {
+    background-color: #8fa440;
+}
+
+#confirm-add:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Menu de réinitialisation */
+.reset-menu {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 200px;
+    overflow: hidden;
+}
+
+.reset-menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.reset-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.reset-menu-item:first-child {
+    border-bottom: 1px solid #eee;
+}

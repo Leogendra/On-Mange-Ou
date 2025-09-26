@@ -34,8 +34,10 @@ function wait(timeout: number): Promise<void> {
 
 class RandomChooserMap {
     private static readonly WEIGHTS_STORAGE_KEY = "weights";
+    private static readonly RESTAURANTS_STORAGE_KEY = "custom-restaurants";
 
     private choices: RandomChoices;
+    private defaultChoices: RandomChoices;
     private options: RandomChooserMapOptions;
     private map: Leaflet.Map | null = null;
 
@@ -43,19 +45,34 @@ class RandomChooserMap {
     private controlCache: Map<RandomChoice, HTMLElement> = new Map();
 
     private alreadyRolled: boolean = false;
+    private isSelectingLocation: boolean = false;
+    private tempMarker: Leaflet.Marker | null = null;
+    private addRestaurantDialog: HTMLDialogElement | null = null;
+    private hiddenRestaurants: Set<RandomChoice> = new Set();
 
     public constructor(
-        choices: RandomChoices,
+        defaultChoices: RandomChoices,
         options?: RandomChooserMapOptions
     ) {
-        this.choices = choices;
+        // Sauvegarder les restaurants par défaut pour la réinitialisation
+        this.defaultChoices = [...defaultChoices];
+        // Charger les restaurants depuis localStorage ou utiliser ceux par défaut
+        this.choices = this.loadRestaurantsFromStorage(defaultChoices);
         this.options = options ?? {};
     }
 
     public async roll() {
-        const choicesSet = new Set(this.choices);
+        // Filtrer les restaurants visibles uniquement
+        const visibleChoices = this.choices.filter(choice => !this.hiddenRestaurants.has(choice));
+
+        if (visibleChoices.length === 0) {
+            alert("Aucun restaurant visible pour la sélection ! Veuillez rendre au moins un restaurant visible.");
+            return;
+        }
+
+        const choicesSet = new Set(visibleChoices);
         const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
-        const randomIndex = this.choices.indexOf(randomChoice);
+        const randomIndex = visibleChoices.indexOf(randomChoice);
 
         const restaurantListElements = document.getElementById("random-chooser-map-control-choices");
         const allClosableElements = document.getElementsByClassName("random-chooser-map-control-choice-closable");
@@ -66,14 +83,16 @@ class RandomChooserMap {
         }
 
         const randomRollNumber = Math.floor(Math.random() * 7) + 3;
-        for (let i = 0; i < this.choices.length * randomRollNumber + randomIndex + 1; i++) {
+        for (let i = 0; i < visibleChoices.length * randomRollNumber + randomIndex + 1; i++) {
             this.unselectAll();
-            this.selectChoice(i % this.choices.length);
+            this.selectChoice(visibleChoices[i % visibleChoices.length]);
             await wait(this.alreadyRolled ? 30 : 100);
         }
 
-        this.controlCache.get(this.choices[randomIndex])?.click();
+        this.controlCache.get(randomChoice)?.click();
         this.updateWeight(choicesSet, randomChoice);
+
+        if (this.alreadyRolled) { return; } // Let labels closed
         this.alreadyRolled = true;
 
         await wait(1000);
@@ -89,8 +108,10 @@ class RandomChooserMap {
         this.addRandomChoiceMarkers();
         this.addRollControl();
         this.addResetControl();
+        this.addAddRestaurantControl();
         this.addRandomChoiceControls();
         this.addInteractions();
+        this.createAddRestaurantDialog();
     }
 
     private initOrigin() {
@@ -149,14 +170,73 @@ class RandomChooserMap {
         const button = document.createElement("button");
 
         button.id = "random-chooser-map-control-reset";
-
         button.innerText = this.options.text?.resetAction ?? "Reset";
 
         button.addEventListener("click", () => {
-            this.resetWeights();
+            this.showResetMenu(button);
         });
 
         this.addControl(button, "bottomleft");
+    }
+
+    private showResetMenu(button: HTMLElement) {
+        // Créer le menu contextuel
+        const menu = document.createElement("div");
+        menu.className = "reset-menu";
+
+        const resetWeightsOption = document.createElement("button");
+        resetWeightsOption.textContent = "Réinitialiser les poids";
+        resetWeightsOption.className = "reset-menu-item";
+        resetWeightsOption.addEventListener("click", () => {
+            this.resetWeights();
+            document.body.removeChild(menu);
+        });
+
+        const resetRestaurantsOption = document.createElement("button");
+        resetRestaurantsOption.textContent = "Réinitialiser les restaurants";
+        resetRestaurantsOption.className = "reset-menu-item";
+        resetRestaurantsOption.addEventListener("click", () => {
+            this.resetToDefaultRestaurants();
+            document.body.removeChild(menu);
+        });
+
+        menu.appendChild(resetWeightsOption);
+        menu.appendChild(resetRestaurantsOption);
+
+        // Positionner le menu
+        const rect = button.getBoundingClientRect();
+        menu.style.position = "fixed";
+        menu.style.left = rect.right + "px";
+        menu.style.bottom = (window.innerHeight - rect.top) + "px";
+
+        // Ajouter au DOM
+        document.body.appendChild(menu);
+
+        // Fermer le menu si on clique ailleurs
+        const closeMenu = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
+                document.body.removeChild(menu);
+                document.removeEventListener("click", closeMenu);
+            }
+        };
+        setTimeout(() => document.addEventListener("click", closeMenu), 0);
+    }
+
+    private addAddRestaurantControl() {
+        const button = document.createElement("button");
+
+        button.id = "random-chooser-map-control-add";
+        button.innerText = "+";
+        button.title = "Ajouter un restaurant";
+
+        button.addEventListener("click", () => {
+            if (this.addRestaurantDialog) {
+                this.startLocationSelection();
+                this.addRestaurantDialog.showModal();
+            }
+        });
+
+        this.addControl(button, "topleft");
     }
 
     private addRandomChoiceControls() {
@@ -185,9 +265,41 @@ class RandomChooserMap {
             weightElement.classList.add("random-chooser-map-control-choice-closable");
             weightElement.innerText = `Weight: ${weight}`;
 
+            // Bouton de suppression
+            const deleteButton = document.createElement("button");
+            deleteButton.classList.add("random-chooser-map-control-choice-delete");
+            deleteButton.innerHTML = "×";
+            deleteButton.title = "Supprimer ce restaurant";
+            deleteButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.deleteRestaurant(choice);
+            });
+
+            // Bouton de masquage temporaire
+            const hideButton = document.createElement("button");
+            hideButton.classList.add("random-chooser-map-control-choice-hide");
+            hideButton.innerHTML = "−";
+            hideButton.title = "Masquer temporairement ce restaurant";
+            hideButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.toggleRestaurantVisibility(choice);
+            });
+
+            // Container pour les boutons d'action
+            const actionsContainer = document.createElement("div");
+            actionsContainer.classList.add("random-chooser-map-control-choice-actions");
+            actionsContainer.appendChild(hideButton);
+            actionsContainer.appendChild(deleteButton);
+
+            // Container pour le titre et les boutons d'action
+            const titleContainer = document.createElement("div");
+            titleContainer.classList.add("random-chooser-map-control-choice-title-container");
+            titleContainer.appendChild(titleElement);
+            titleContainer.appendChild(actionsContainer);
+
             const item = document.createElement("div");
             item.classList.add("random-chooser-map-control-choice");
-            item.appendChild(titleElement);
+            item.appendChild(titleContainer);
             item.appendChild(descriptionElement);
             item.appendChild(weightElement);
 
@@ -323,7 +435,7 @@ class RandomChooserMap {
         }
 
         for (const [name, weight] of Object.entries(weights)) {
-            if (decrement.name === name) { weights[name] = weight - 2; }
+            if (decrement.name === name) { weights[name] = 0; }
             else { weights[name] = weight + 1; }
         }
 
@@ -335,6 +447,391 @@ class RandomChooserMap {
 
     private resetWeights() {
         localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+    }
+
+    private resetToDefaultRestaurants() {
+        if (confirm("Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.")) {
+            for (const marker of this.markerCache.values()) {
+                if (this.map) {
+                    this.map.removeLayer(marker);
+                }
+            }
+            this.markerCache.clear();
+            this.controlCache.clear();
+
+            this.choices = [...this.defaultChoices];
+
+            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+
+            this.addRandomChoiceMarkers();
+            this.addRandomChoiceControls();
+            this.addInteractions();
+            this.saveRestaurantsToStorage();
+        }
+    }
+
+    private deleteRestaurant(choice: RandomChoice) {
+        // if (!confirm(`Are you sure you want to delete "${choice.name}"?`)) {
+        //     return;
+        // }
+
+        const index = this.choices.indexOf(choice);
+        if (index > -1) {
+            this.choices.splice(index, 1);
+        }
+
+        const marker = this.markerCache.get(choice);
+        if (marker && this.map) {
+            this.map.removeLayer(marker);
+            this.markerCache.delete(choice);
+        }
+
+        this.controlCache.delete(choice);
+
+        this.addRandomChoiceControls();
+        this.addInteractions();
+        this.saveRestaurantsToStorage();
+    }
+
+    private toggleRestaurantVisibility(choice: RandomChoice) {
+        if (this.hiddenRestaurants.has(choice)) {
+            this.hiddenRestaurants.delete(choice);
+
+            const marker = this.markerCache.get(choice);
+            if (marker && this.map) {
+                marker.addTo(this.map);
+            }
+
+            const control = this.controlCache.get(choice);
+            if (control) {
+                control.classList.remove("hidden-restaurant");
+                const hideButton = control.querySelector(".random-chooser-map-control-choice-hide") as HTMLButtonElement;
+                if (hideButton) {
+                    hideButton.innerHTML = "-";
+                    hideButton.title = "Masquer temporairement ce restaurant";
+                }
+            }
+        } else {
+            this.hiddenRestaurants.add(choice);
+
+            const marker = this.markerCache.get(choice);
+            if (marker && this.map) {
+                this.map.removeLayer(marker);
+            }
+
+            const control = this.controlCache.get(choice);
+            if (control) {
+                control.classList.add("hidden-restaurant");
+                const hideButton = control.querySelector(".random-chooser-map-control-choice-hide") as HTMLButtonElement;
+                if (hideButton) {
+                    hideButton.innerHTML = "+";
+                    hideButton.title = "Rendre visible ce restaurant";
+                }
+            }
+        }
+    }
+
+    private createAddRestaurantDialog() {
+        this.addRestaurantDialog = document.createElement("dialog");
+        this.addRestaurantDialog.id = "add-restaurant-dialog";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = "Ajouter un restaurant";
+
+        const nameGroup = document.createElement("div");
+        nameGroup.className = "form-group";
+
+        const nameLabel = document.createElement("label");
+        nameLabel.htmlFor = "restaurant-name";
+        nameLabel.textContent = "Nom du restaurant*:";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.id = "restaurant-name";
+        nameInput.name = "restaurant-name";
+        nameInput.required = true;
+
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+
+        const addressGroup = document.createElement("div");
+        addressGroup.className = "form-group";
+
+        const addressLabel = document.createElement("label");
+        addressLabel.htmlFor = "restaurant-address";
+        addressLabel.textContent = "Adresse:";
+
+        const addressInput = document.createElement("input");
+        addressInput.type = "text";
+        addressInput.id = "restaurant-address";
+        addressInput.name = "restaurant-address";
+        addressInput.required = false;
+
+        addressGroup.appendChild(addressLabel);
+        addressGroup.appendChild(addressInput);
+
+        const locationGroup = document.createElement("div");
+        locationGroup.className = "form-group";
+
+        const locationLabel = document.createElement("label");
+        locationLabel.textContent = "Localisation:";
+
+        const locationInfo = document.createElement("p");
+        locationInfo.id = "location-info";
+        locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+
+        const latInput = document.createElement("input");
+        latInput.type = "hidden";
+        latInput.id = "restaurant-lat";
+        latInput.name = "restaurant-lat";
+
+        const lngInput = document.createElement("input");
+        lngInput.type = "hidden";
+        lngInput.id = "restaurant-lng";
+        lngInput.name = "restaurant-lng";
+
+        locationGroup.appendChild(locationLabel);
+        locationGroup.appendChild(locationInfo);
+        locationGroup.appendChild(latInput);
+        locationGroup.appendChild(lngInput);
+
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "dialog-buttons";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.id = "cancel-add";
+        cancelBtn.textContent = "Annuler";
+
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "submit";
+        confirmBtn.id = "confirm-add";
+        confirmBtn.textContent = "Ajouter";
+        confirmBtn.disabled = true;
+
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(confirmBtn);
+
+        form.appendChild(title);
+        form.appendChild(nameGroup);
+        form.appendChild(addressGroup);
+        form.appendChild(locationGroup);
+        form.appendChild(buttonsDiv);
+
+        this.addRestaurantDialog.appendChild(form);
+
+        document.body.appendChild(this.addRestaurantDialog);
+        this.setupDialogEvents();
+    }
+
+    private setupDialogEvents() {
+        if (!this.addRestaurantDialog) return;
+
+        const cancelBtn = this.addRestaurantDialog.querySelector("#cancel-add") as HTMLButtonElement;
+        const confirmBtn = this.addRestaurantDialog.querySelector("#confirm-add") as HTMLButtonElement;
+        const nameInput = this.addRestaurantDialog.querySelector("#restaurant-name") as HTMLInputElement;
+        const addressInput = this.addRestaurantDialog.querySelector("#restaurant-address") as HTMLInputElement;
+        const latInput = this.addRestaurantDialog.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog.querySelector("#restaurant-lng") as HTMLInputElement;
+
+        if (!this.addRestaurantDialog) return;
+
+        cancelBtn?.addEventListener("click", () => {
+            this.cancelLocationSelection();
+            this.addRestaurantDialog?.close();
+        });
+
+        this.addRestaurantDialog.addEventListener("click", (e) => {
+            if (e.target === this.addRestaurantDialog) {
+                this.cancelLocationSelection();
+                this.addRestaurantDialog?.close();
+            }
+        });
+
+        const form = this.addRestaurantDialog.querySelector('form') as HTMLFormElement;
+        form?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (this.validateRestaurantForm()) {
+                this.addNewRestaurant(
+                    nameInput.value.trim(),
+                    addressInput.value.trim(),
+                    parseFloat(latInput.value),
+                    parseFloat(lngInput.value)
+                );
+                this.addRestaurantDialog?.close();
+            }
+        });
+
+        this.addRestaurantDialog.addEventListener("close", () => {
+            this.cancelLocationSelection();
+            this.resetForm();
+        });
+
+        const validateForm = () => {
+            const isValid = nameInput.value.trim() !== "" &&
+                latInput.value !== "" &&
+                lngInput.value !== "";
+            confirmBtn.disabled = !isValid;
+        };
+
+        nameInput?.addEventListener("input", validateForm);
+        addressInput?.addEventListener("input", validateForm);
+    }
+
+    private startLocationSelection() {
+        this.isSelectingLocation = true;
+        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+        if (locationInfo) {
+            locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+            locationInfo.style.color = "#007bff";
+        }
+
+        this.map?.on("click", this.onMapClickForLocation.bind(this));
+    }
+
+    private onMapClickForLocation(e: Leaflet.LeafletMouseEvent) {
+        if (!this.isSelectingLocation) return;
+
+        const { lat, lng } = e.latlng;
+
+        if (this.tempMarker) {
+            this.map?.removeLayer(this.tempMarker);
+        }
+
+        this.tempMarker = Leaflet.marker([lat, lng], {
+            icon: Leaflet.icon({
+                iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
+                iconSize: [32, 32],
+                popupAnchor: [0, -16]
+            })
+        }).addTo(this.map!);
+
+        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+
+        if (latInput) latInput.value = lat.toString();
+        if (lngInput) lngInput.value = lng.toString();
+        if (locationInfo) {
+            locationInfo.textContent = `Selected location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            locationInfo.style.color = "#28a745";
+        }
+
+        const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
+        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
+        const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
+
+        if (confirmBtn && nameInput && addressInput) {
+            const isValid = nameInput.value.trim() !== "" &&
+                addressInput.value.trim() !== "" &&
+                latInput.value !== "" &&
+                lngInput.value !== "";
+            confirmBtn.disabled = !isValid;
+        }
+    }
+
+    private cancelLocationSelection() {
+        this.isSelectingLocation = false;
+
+        if (this.tempMarker) {
+            this.map?.removeLayer(this.tempMarker);
+            this.tempMarker = null;
+        }
+
+        this.map?.off("click", this.onMapClickForLocation.bind(this));
+    }
+
+    private validateRestaurantForm(): boolean {
+        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
+        // const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
+        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+
+        return nameInput?.value.trim() !== "" &&
+            //    addressInput?.value.trim() !== "" && --- IGNORE ---
+            latInput?.value !== "" &&
+            lngInput?.value !== "";
+    }
+
+    private resetForm() {
+        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
+        const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
+        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+        const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
+
+        if (nameInput) nameInput.value = "";
+        if (addressInput) addressInput.value = "";
+        if (latInput) latInput.value = "";
+        if (lngInput) lngInput.value = "";
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (locationInfo) {
+            locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+            locationInfo.style.color = "";
+        }
+    }
+
+    private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
+        const newRestaurant: RandomChoice = {
+            name: name,
+            description: address,
+            location: Location.at(lat, lng)
+        };
+
+        this.choices.push(newRestaurant);
+
+        if (this.options.style?.randomMarker) {
+            const marker = this.addMarker(
+                newRestaurant.location,
+                this.options.style.randomMarker,
+                newRestaurant.name
+            );
+            this.markerCache.set(newRestaurant, marker);
+        }
+
+        this.addRandomChoiceControls();
+        this.addInteractions();
+        this.saveRestaurantsToStorage();
+    }
+
+    private loadRestaurantsFromStorage(defaultChoices: RandomChoices): RandomChoices {
+        try {
+            const saved = localStorage.getItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+            if (saved) {
+                const restaurantsData = JSON.parse(saved);
+                return restaurantsData.map((r: any) => ({
+                    name: r.name,
+                    description: r.address,
+                    location: Location.at(r.location.lat, r.location.long)
+                }));
+            }
+        } catch (error) {
+            console.warn('Erreur lors du chargement des restaurants depuis localStorage:', error);
+            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+        }
+
+        this.saveRestaurantsToStorageInternal(defaultChoices);
+        return [...defaultChoices];
+    }
+
+    private saveRestaurantsToStorage() {
+        this.saveRestaurantsToStorageInternal(this.choices);
+    }
+
+    private saveRestaurantsToStorageInternal(choices: RandomChoices) {
+        const restaurantsData = choices.map(choice => ({
+            name: choice.name,
+            address: choice.description,
+            location: {
+                lat: choice.location.lat,
+                long: choice.location.lon
+            }
+        }));
+        localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(restaurantsData));
     }
 }
 
