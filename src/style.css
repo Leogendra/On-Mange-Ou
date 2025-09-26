@@ -148,7 +148,7 @@ body {
     background-color: var(--primary-color);
 }
 
-/* Container pour le titre et le bouton de suppression */
+/* Container pour le titre et les boutons d'action */
 .random-chooser-map-control-choice-title-container {
     display: flex;
     justify-content: space-between;
@@ -158,6 +158,84 @@ body {
 
 .random-chooser-map-control-choice-title-container .random-chooser-map-control-choice-title {
     flex: 1;
+}
+
+/* Container pour les boutons d'action (masquer et supprimer) */
+.random-chooser-map-control-choice-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Bouton de masquage temporaire */
+.random-chooser-map-control-choice-hide {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    
+    background-color: var(--secondary-color);
+    border: none;
+    border-radius: 50%;
+    
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    opacity: 0.7;
+}
+
+.random-chooser-map-control-choice-hide:hover {
+    background-color: #d4a429;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.random-chooser-map-control-choice-hide:active {
+    transform: scale(0.9);
+}
+
+/* Restaurant masqué temporairement */
+.random-chooser-map-control-choice.hidden-restaurant {
+    opacity: 0.5;
+    background-color: #e0e0e0;
+}
+
+.random-chooser-map-control-choice.hidden-restaurant .random-chooser-map-control-choice-title {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Masquer les boutons d'action par défaut, les afficher au hover */
+.random-chooser-map-control-choice .random-chooser-map-control-choice-actions {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-actions {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Styles spécifiques pour les boutons individuels */
+.random-chooser-map-control-choice .random-chooser-map-control-choice-delete,
+.random-chooser-map-control-choice .random-chooser-map-control-choice-hide {
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete:hover,
+.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-hide:hover {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 /* Bouton de suppression */
@@ -193,23 +271,6 @@ body {
 
 .random-chooser-map-control-choice-delete:active {
     transform: scale(0.9);
-}
-
-/* Masquer le bouton de suppression par défaut, l'afficher au hover */
-.random-chooser-map-control-choice .random-chooser-map-control-choice-delete {
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all 0.3s ease;
-}
-
-.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete {
-    opacity: 0.7;
-    transform: scale(1);
-}
-
-.random-chooser-map-control-choice:hover .random-chooser-map-control-choice-delete:hover {
-    opacity: 1;
-    transform: scale(1.1);
 }
 
 /* Styles pour le bouton + */
