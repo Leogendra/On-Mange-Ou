@@ -3,323 +3,317 @@ import { Location } from "./utils/location";
 import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 export interface RandomChoice {
-	name: string;
-	description: string;
-	location: Location;
+    name: string;
+    description: string;
+    location: Location;
 }
 
 type RandomChoices = Array<RandomChoice>;
 
 type RandomChooserMapOptions = {
-	view?: {
-		origin?: Location;
-		zoom?: number;
-	};
-	style?: {
-		markerSize?: number;
-		originMarker?: string;
-		randomMarker?: string;
-	};
-	text?: {
-		rollAction?: string;
-		resetAction?: string;
-	};
+    view?: {
+        origin?: Location;
+        zoom?: number;
+    };
+    style?: {
+        markerSize?: number;
+        originMarker?: string;
+        randomMarker?: string;
+    };
+    text?: {
+        rollAction?: string;
+        resetAction?: string;
+    };
 };
 
 function wait(timeout: number): Promise<void> {
-	return new Promise((success, _) => {
-		setInterval(success, timeout);
-	});
+    return new Promise((success, _) => {
+        setInterval(success, timeout);
+    });
 }
 
 class RandomChooserMap {
-	private static readonly WEIGHTS_STORAGE_KEY = "weights";
+    private static readonly WEIGHTS_STORAGE_KEY = "weights";
 
-	private choices: RandomChoices;
-	private options: RandomChooserMapOptions;
-	private map: Leaflet.Map | null = null;
+    private choices: RandomChoices;
+    private options: RandomChooserMapOptions;
+    private map: Leaflet.Map | null = null;
 
-	private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
-	private controlCache: Map<RandomChoice, HTMLElement> = new Map();
+    private markerCache: Map<RandomChoice, Leaflet.Marker> = new Map();
+    private controlCache: Map<RandomChoice, HTMLElement> = new Map();
 
-	public constructor(
-		choices: RandomChoices,
-		options?: RandomChooserMapOptions
-	) {
-		this.choices = choices;
-		this.options = options ?? {};
-	}
+    public constructor(
+        choices: RandomChoices,
+        options?: RandomChooserMapOptions
+    ) {
+        this.choices = choices;
+        this.options = options ?? {};
+    }
 
-	public async roll() {
-		const choicesSet = new Set(this.choices);
-		const randomChoice = weightedRandom(
-			this.recoverSavedWeights(choicesSet)
-		);
-		const randomIndex = this.choices.indexOf(randomChoice);
+    public async roll() {
+        const choicesSet = new Set(this.choices);
+        const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
+        const randomIndex = this.choices.indexOf(randomChoice);
 
-		for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
-			this.unselectAll();
-			this.selectChoice(i % this.choices.length);
+        for (let i = 0; i < this.choices.length * 5 + randomIndex + 1; i++) {
+            this.unselectAll();
+            this.selectChoice(i % this.choices.length);
+            await wait(50);
+        }
 
-			await wait(50);
-		}
+        this.controlCache.get(this.choices[randomIndex])?.click();
+        this.updateWeight(choicesSet, randomChoice);
+    }
 
-		this.controlCache.get(this.choices[randomIndex])?.click();
-		this.updateWeight(choicesSet, randomChoice);
-	}
+    public mountOn(root: HTMLElement | string) {
+        this.map = Leaflet.map(root);
+        this.initOrigin();
+        this.addTileSet();
+        this.addRandomChoiceMarkers();
+        this.addRollControl();
+        this.addResetControl();
+        this.addRandomChoiceControls();
+        this.addInteractions();
+    }
 
-	public mountOn(root: HTMLElement | string) {
-		this.map = Leaflet.map(root);
-		this.initOrigin();
-		this.addTileSet();
-		this.addRandomChoiceMarkers();
-		this.addRollControl();
-		this.addResetControl();
-		this.addRandomChoiceControls();
-		this.addInteractions();
-	}
+    private initOrigin() {
+        if (this.options.view !== undefined) {
+            const origin = this.options.view.origin ?? Location.at(0, 0);
 
-	private initOrigin() {
-		if (this.options.view !== undefined) {
-			const origin = this.options.view.origin ?? Location.at(0, 0);
+            this.map!.setView(origin.toTuple(), this.options.view.zoom);
 
-			this.map!.setView(origin.toTuple(), this.options.view.zoom);
+            if (this.options.style?.originMarker !== undefined) {
+                this.addMarker(origin, this.options.style.originMarker);
+            }
+        }
+    }
 
-			if (this.options.style?.originMarker !== undefined) {
-				this.addMarker(origin, this.options.style.originMarker);
-			}
-		}
-	}
+    private addTileSet() {
+        Leaflet.tileLayer(
+            "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    '&copy; <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
+                minZoom: 1,
+                maxZoom: 20
+            }
+        ).addTo(this.map!);
+    }
 
-	private addTileSet() {
-		Leaflet.tileLayer(
-			"https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
-			{
-				attribution:
-					'&copy; Tiles made by <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
-				minZoom: 1,
-				maxZoom: 20
-			}
-		).addTo(this.map!);
-	}
+    private addRandomChoiceMarkers() {
+        if (this.options.style?.randomMarker !== undefined) {
+            for (const choice of this.choices) {
+                const marker = this.addMarker(
+                    choice.location,
+                    this.options.style.randomMarker,
+                    choice.name
+                );
 
-	private addRandomChoiceMarkers() {
-		if (this.options.style?.randomMarker !== undefined) {
-			for (const choice of this.choices) {
-				const marker = this.addMarker(
-					choice.location,
-					this.options.style.randomMarker,
-					choice.name
-				);
+                this.markerCache.set(choice, marker);
+            }
+        }
+    }
 
-				this.markerCache.set(choice, marker);
-			}
-		}
-	}
+    private addRollControl() {
+        const button = document.createElement("button");
 
-	private addRollControl() {
-		const button = document.createElement("button");
+        button.id = "random-chooser-map-control-roll";
 
-		button.id = "random-chooser-map-control-roll";
-		button.classList.add("random-chooser-map-control");
+        button.innerText = this.options.text?.rollAction ?? "ROLL !";
 
-		button.innerText = this.options.text?.rollAction ?? "ROLL !";
+        button.addEventListener("click", () => {
+            this.roll();
+        });
 
-		button.addEventListener("click", () => {
-			this.roll();
-		});
+        this.addControl(button, "bottomright");
+    }
 
-		this.addControl(button, "bottomright");
-	}
+    private addResetControl() {
+        const button = document.createElement("button");
 
-	private addResetControl() {
-		const button = document.createElement("button");
+        button.id = "random-chooser-map-control-reset";
 
-		button.id = "random-chooser-map-control-reset";
-		button.classList.add("random-chooser-map-control");
+        button.innerText = this.options.text?.resetAction ?? "Reset";
 
-		button.innerText = this.options.text?.resetAction ?? "Reset";
+        button.addEventListener("click", () => {
+            this.resetWeights();
+        });
 
-		button.addEventListener("click", () => {
-			this.resetWeights();
-		});
+        this.addControl(button, "bottomleft");
+    }
 
-		this.addControl(button, "bottomleft");
-	}
+    private addRandomChoiceControls() {
+        const existing = document.getElementById("random-chooser-map-control-choices");
+        if (existing !== null) { existing.remove(); }
 
-	private addRandomChoiceControls() {
-		const container = document.createElement("aside");
-		container.id = "random-chooser-map-control-choices";
-		container.classList.add("random-chooser-map-control");
-		container.addEventListener("wheel", (e) =>
-			e.stopImmediatePropagation()
-		);
-		container.addEventListener("scroll", (e) =>
-			e.stopImmediatePropagation()
-		);
+        const container = document.createElement("aside");
+        container.id = "random-chooser-map-control-choices";
+        container.addEventListener("wheel", (e) => e.stopImmediatePropagation());
+        container.addEventListener("scroll", (e) => e.stopImmediatePropagation());
 
-		for (const choice of this.choices) {
-			// const index = this.choices.indexOf(choice);
+        for (const choice of this.choices) {
+            const weight = this.recoverSavedWeights(new Set([choice])).values().next().value?.weight;
+            
+            const titleElement = document.createElement("h2");
+            titleElement.innerText = choice.name;
+            
+            const descriptionElement = document.createElement("h3");
+            descriptionElement.innerText = choice.description;
+            
+            const weightElement = document.createElement("h3");
+            weightElement.innerText = `Weight: ${weight}`;
 
-			const title = document.createElement("h2");
-			title.innerText = choice.name;
+            const item = document.createElement("div");
+            item.classList.add("random-chooser-map-control-choice");
+            item.appendChild(titleElement);
+            item.appendChild(descriptionElement);
+            item.appendChild(weightElement);
+            
+            container.appendChild(item);
+            
+            // const index = this.choices.indexOf(choice);
+            // if (index !== this.choices.length - 1) {
+            // 	container.appendChild(document.createElement("hr"));
+            // }
 
-			const description = document.createElement("h3");
-			description.innerText = choice.description;
+            this.controlCache.set(choice, item);
+        }
 
-			const item = document.createElement("div");
-			item.classList.add(
-				"random-chooser-map-control",
-				"random-chooser-map-control-choice"
-			);
-			item.appendChild(title);
-			item.appendChild(description);
+        this.addControl(container, "topright");
+    }
 
-			container.appendChild(item);
+    private addInteractions() {
+        for (const [choice, control] of this.controlCache.entries()) {
+            control.addEventListener("click", (e) => {
+                this.markerCache.get(choice)?.openPopup();
+                e.stopPropagation();
+            });
+        }
+    }
 
-			// if (index !== this.choices.length - 1) {
-			// 	container.appendChild(document.createElement("hr"));
-			// }
+    private addMarker(
+        location: Location,
+        image: string,
+        message: string | undefined = undefined
+    ): Leaflet.Marker {
+        const markerSize = this.options.style?.markerSize ?? 16;
 
-			this.controlCache.set(choice, item);
-		}
+        const marker = Leaflet.marker(location.toTuple(), {
+            icon: Leaflet.icon({
+                iconUrl: image,
+                iconSize: [markerSize, markerSize],
+                popupAnchor: [0, -markerSize / 2]
+            })
+        }).addTo(this.map!);
 
-		this.addControl(container, "topright");
-	}
+        if (message !== undefined) {
+            marker.bindPopup(message);
+        }
 
-	private addInteractions() {
-		for (const [choice, control] of this.controlCache.entries()) {
-			control.addEventListener("click", (e) => {
-				this.markerCache.get(choice)?.openPopup();
-				e.stopPropagation();
-			});
-		}
-	}
+        return marker;
+    }
 
-	private addMarker(
-		location: Location,
-		image: string,
-		message: string | undefined = undefined
-	): Leaflet.Marker {
-		const markerSize = this.options.style?.markerSize ?? 16;
+    private addControl(
+        element: HTMLElement,
+        position: Leaflet.ControlPosition
+    ): Leaflet.Control {
+        const ExtendedControl = Leaflet.Control.extend({
+            onAdd: (_: any) => element
+        });
+        const control = new ExtendedControl({ position }).addTo(this.map!);
+        return control;
+    }
 
-		const marker = Leaflet.marker(location.toTuple(), {
-			icon: Leaflet.icon({
-				iconUrl: image,
-				iconSize: [markerSize, markerSize],
-				popupAnchor: [0, -markerSize / 2]
-			})
-		}).addTo(this.map!);
+    private selectChoice(choice: number | RandomChoice) {
+        if (Number.isInteger(choice)) {
+            choice = this.choices[Number(choice)];
+        }
 
-		if (message !== undefined) {
-			marker.bindPopup(message);
-		}
+        this.controlCache
+            .get(choice as RandomChoice)
+            ?.classList.add("selected");
+    }
 
-		return marker;
-	}
+    private unselectAll() {
+        for (const control of this.controlCache.values()) {
+            control.classList.remove("selected");
+        }
+    }
 
-	private addControl(
-		element: HTMLElement,
-		position: Leaflet.ControlPosition
-	): Leaflet.Control {
-		const ExtendedControl = Leaflet.Control.extend({
-			onAdd: (_: any) => element
-		});
-		const control = new ExtendedControl({ position }).addTo(this.map!);
-		return control;
-	}
+    private recoverSavedWeights(
+        items: Set<RandomChoice>
+    ): WeightedSet<RandomChoice> {
+        const weights: WeightedSet<RandomChoice> = new Set();
+        const rawWeights = localStorage.getItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY
+        );
 
-	private selectChoice(choice: number | RandomChoice) {
-		if (Number.isInteger(choice)) {
-			choice = this.choices[Number(choice)];
-		}
+        for (const item of items) {
+            weights.add({
+                value: item,
+                weight: 1
+            });
+        }
 
-		this.controlCache
-			.get(choice as RandomChoice)
-			?.classList.add("selected");
-	}
+        if (rawWeights !== null) {
+            const savedWeights = JSON.parse(rawWeights) as {
+                [key: string]: number;
+            };
 
-	private unselectAll() {
-		for (const control of this.controlCache.values()) {
-			control.classList.remove("selected");
-		}
-	}
+            for (const [name, weight] of Object.entries(savedWeights)) {
+                for (const item of weights) {
+                    if (item.value.name === name) {
+                        item.weight = weight;
+                    }
+                }
+            }
+        }
 
-	private recoverSavedWeights(
-		items: Set<RandomChoice>
-	): WeightedSet<RandomChoice> {
-		const weights: WeightedSet<RandomChoice> = new Set();
-		const rawWeights = localStorage.getItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY
-		);
+        return weights;
+    }
 
-		for (const item of items) {
-			weights.add({
-				value: item,
-				weight: 1
-			});
-		}
+    private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
+        const rawWeights = localStorage.getItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY
+        );
+        let weights: {
+            [key: string]: number;
+        } = {};
 
-		if (rawWeights !== null) {
-			const savedWeights = JSON.parse(rawWeights) as {
-				[key: string]: number;
-			};
+        if (rawWeights !== null) {
+            const savedWeights: {
+                [key: string]: number | undefined;
+            } = JSON.parse(rawWeights);
 
-			for (const [name, weight] of Object.entries(savedWeights)) {
-				for (const item of weights) {
-					if (item.value.name === name) {
-						item.weight = weight;
-					}
-				}
-			}
-		}
+            for (const item of items) {
+                if (savedWeights[item.name] === undefined) {
+                    weights[item.name] = 1;
+                }
+                else {
+                    weights[item.name] = savedWeights[item.name]!;
+                }
+            }
+        }
+        else {
+            for (const item of items) { 
+                weights[item.name] = 1; 
+            }
+        }
 
-		return weights;
-	}
+        for (const [name, weight] of Object.entries(weights)) {
+            if (decrement.name === name) { weights[name] = weight - 1; }
+            else { weights[name] = weight + 2; }
+        }
 
-	private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
-		const rawWeights = localStorage.getItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY
-		);
-		let weights: {
-			[key: string]: number;
-		} = {};
+        localStorage.setItem(
+            RandomChooserMap.WEIGHTS_STORAGE_KEY,
+            JSON.stringify(weights)
+        );
+    }
 
-		if (rawWeights !== null) {
-			const savedWeights: {
-				[key: string]: number | undefined;
-			} = JSON.parse(rawWeights);
-
-			for (const item of items) {
-				if (savedWeights[item.name] === undefined) {
-					weights[item.name] = 1;
-				} else {
-					weights[item.name] = savedWeights[item.name]!;
-				}
-			}
-		} else {
-			for (const item of items) {
-				weights[item.name] = 1;
-			}
-		}
-
-		for (const [name, weight] of Object.entries(weights)) {
-			if (decrement.name === name) {
-				weights[name] = weight - 1;
-			} else {
-				weights[name] = weight + 2;
-			}
-		}
-
-		localStorage.setItem(
-			RandomChooserMap.WEIGHTS_STORAGE_KEY,
-			JSON.stringify(weights)
-		);
-	}
-
-	private resetWeights() {
-		localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
-	}
+    private resetWeights() {
+        localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+    }
 }
 
 export default RandomChooserMap;
