@@ -53,14 +53,6 @@
             }
         },
         {
-            "name": "Takô Sushi",
-            "address": "150 Rue de Crète",
-            "location": {
-                "lat": 43.60919905630271,
-                "long": 3.8901257966708775
-            }
-        },
-        {
             "name": "Kuma-ï Sushi",
             "address": "16 Rue Boussairolles",
             "location": {
@@ -69,7 +61,7 @@
             }
         },
         {
-            "name": "Tiger Noodles",
+            "name": "Burger n Co",
             "address": "11 Pl. du Millénaire",
             "location": {
                 "lat": 43.60830961926281,
