@@ -46,6 +46,12 @@ type RandomChooserMapOptions = {
         resetRestaurantsConfirmation?: string;
         resetWeightsConfirmation?: string;
         weightLabel?: string;
+        mapClickChoiceTitle?: string;
+        mapClickAddRestaurant?: string;
+        mapClickMoveOrigin?: string;
+        mapClickCancel?: string;
+        formLocationClickToEdit?: string;
+        formLocationEditMode?: string;
     };
 };
 
@@ -69,18 +75,18 @@ class RandomChooserMap {
 
     private lockRoll: boolean = false;
     private alreadyRolled: boolean = false;
-    private isSelectingLocation: boolean = false;
+    private isSelectingLocationInDialog: boolean = false;
     private tempMarker: Leaflet.Marker | null = null;
     private addRestaurantDialog: HTMLDialogElement | null = null;
     private hiddenRestaurants: Set<RandomChoice> = new Set();
+    private originMarker: Leaflet.Marker | null = null;
+    private actionChoiceDialog: HTMLDialogElement | null = null;
 
     public constructor(
         defaultChoices: RandomChoices,
         options?: RandomChooserMapOptions
     ) {
-        // Sauvegarder les restaurants par défaut pour la réinitialisation
         this.defaultChoices = [...defaultChoices];
-        // Charger les restaurants depuis localStorage ou utiliser ceux par défaut
         this.choices = this.loadRestaurantsFromStorage(defaultChoices);
         this.options = options ?? {};
     }
@@ -142,6 +148,8 @@ class RandomChooserMap {
         this.addRandomChoiceControls();
         this.addInteractions();
         this.createAddRestaurantDialog();
+        this.createActionChoiceDialog();
+        this.addMapClickHandler();
     }
 
     private initOrigin() {
@@ -151,7 +159,7 @@ class RandomChooserMap {
             this.map!.setView(origin.toTuple(), this.options.view.zoom);
 
             if (this.options.style?.originMarker !== undefined) {
-                this.addMarker(origin, this.options.style.originMarker);
+                this.originMarker = this.addMarker(origin, this.options.style.originMarker);
             }
         }
     }
@@ -210,7 +218,6 @@ class RandomChooserMap {
     }
 
     private showResetMenu(button: HTMLElement) {
-        // Créer le menu contextuel
         const menu = document.createElement("div");
         menu.className = "reset-menu";
 
@@ -233,16 +240,13 @@ class RandomChooserMap {
         menu.appendChild(resetWeightsOption);
         menu.appendChild(resetRestaurantsOption);
 
-        // Positionner le menu
         const rect = button.getBoundingClientRect();
         menu.style.position = "fixed";
         menu.style.left = rect.right + "px";
         menu.style.bottom = (window.innerHeight - rect.top) + "px";
 
-        // Ajouter au DOM
         document.body.appendChild(menu);
 
-        // Fermer le menu si on clique ailleurs
         const closeMenu = (e: MouseEvent) => {
             if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
                 document.body.removeChild(menu);
@@ -265,7 +269,6 @@ class RandomChooserMap {
         buttonContainer.appendChild(buttonTitle);
         buttonContainer.addEventListener("click", () => {
             if (this.addRestaurantDialog) {
-                this.startLocationSelection();
                 this.addRestaurantDialog.showModal();
             }
         });
@@ -359,8 +362,8 @@ class RandomChooserMap {
             this.controlCache.set(choice, item);
         }
 
-        const addRestaurantCard = this.addAddRestaurantCard()
-        container.appendChild(addRestaurantCard);
+        // const addRestaurantCard = this.addAddRestaurantCard();
+        // container.appendChild(addRestaurantCard);
         this.addControl(container, "topright");
     }
 
@@ -523,10 +526,6 @@ class RandomChooserMap {
     }
 
     private deleteRestaurant(choice: RandomChoice) {
-        // if (!confirm(`Are you sure you want to delete "${choice.name}"?`)) {
-        //     return;
-        // }
-
         const index = this.choices.indexOf(choice);
         if (index > -1) {
             this.choices.splice(index, 1);
@@ -593,7 +592,6 @@ class RandomChooserMap {
         const title = document.createElement("h2");
         title.textContent = this.options.text?.formAddRestaurant ?? "Add a restaurant";
 
-        // Groupe nom
         const nameGroup = document.createElement("div");
         nameGroup.className = "form-group";
         
@@ -610,7 +608,6 @@ class RandomChooserMap {
         nameGroup.appendChild(nameLabel);
         nameGroup.appendChild(nameInput);
 
-        // Groupe adresse
         const addressGroup = document.createElement("div");
         addressGroup.className = "form-group";
         
@@ -635,7 +632,18 @@ class RandomChooserMap {
         
         const locationInfo = document.createElement("p");
         locationInfo.id = "location-info";
-        locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
+        locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
+        locationInfo.style.cursor = "pointer";
+        locationInfo.style.padding = "0.8rem";
+        locationInfo.style.backgroundColor = "#f8f9fa";
+        locationInfo.style.border = "2px dashed #ddd";
+        locationInfo.style.borderRadius = "0.5rem";
+        locationInfo.style.textAlign = "center";
+        locationInfo.style.transition = "all 0.3s ease";
+
+        locationInfo.addEventListener("click", () => {
+            this.startLocationSelectionInDialog();
+        });
 
         const latInput = document.createElement("input");
         latInput.type = "hidden";
@@ -735,78 +743,21 @@ class RandomChooserMap {
         addressInput?.addEventListener("input", validateForm);
     }
 
-    private startLocationSelection() {
-        this.isSelectingLocation = true;
-        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
-        if (locationInfo) {
-            locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
-            locationInfo.style.color = "#007bff";
-        }
-
-        this.map?.on("click", this.onMapClickForLocation.bind(this));
-    }
-
-    private onMapClickForLocation(e: Leaflet.LeafletMouseEvent) {
-        if (!this.isSelectingLocation) return;
-
-        const { lat, lng } = e.latlng;
-
-        if (this.tempMarker) {
-            this.map?.removeLayer(this.tempMarker);
-        }
-
-        this.tempMarker = Leaflet.marker([lat, lng], {
-            icon: Leaflet.icon({
-                iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
-                iconSize: [32, 32],
-                popupAnchor: [0, -16]
-            })
-        }).addTo(this.map!);
-
-        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
-        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
-        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
-
-        if (latInput) latInput.value = lat.toString();
-        if (lngInput) lngInput.value = lng.toString();
-        if (locationInfo) {
-            const selectedText = this.options.text?.formRestaurantLocationSelected ?? "Selected position: ";
-            locationInfo.textContent = `${selectedText}${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            locationInfo.style.color = "#28a745";
-        }
-
-        const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
-        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
-        const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
-
-        if (confirmBtn && nameInput && addressInput) {
-            const isValid = nameInput.value.trim() !== "" &&
-                addressInput.value.trim() !== "" &&
-                latInput.value !== "" &&
-                lngInput.value !== "";
-            confirmBtn.disabled = !isValid;
-        }
-    }
-
     private cancelLocationSelection() {
-        this.isSelectingLocation = false;
+        this.isSelectingLocationInDialog = false;
 
         if (this.tempMarker) {
             this.map?.removeLayer(this.tempMarker);
             this.tempMarker = null;
         }
-
-        this.map?.off("click", this.onMapClickForLocation.bind(this));
     }
 
     private validateRestaurantForm(): boolean {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
-        // const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
         const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
         const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
 
         return nameInput?.value.trim() !== "" &&
-            //    addressInput?.value.trim() !== "" && --- IGNORE ---
             latInput?.value !== "" &&
             lngInput?.value !== "";
     }
@@ -825,9 +776,12 @@ class RandomChooserMap {
         if (lngInput) lngInput.value = "";
         if (confirmBtn) confirmBtn.disabled = true;
         if (locationInfo) {
-            locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
+            locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
             locationInfo.style.color = "";
+            locationInfo.style.borderColor = "#ddd";
         }
+
+        this.isSelectingLocationInDialog = false;
     }
 
     private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
@@ -887,6 +841,178 @@ class RandomChooserMap {
             }
         }));
         localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(restaurantsData));
+    }
+
+    private createActionChoiceDialog() {
+        this.actionChoiceDialog = document.createElement("dialog");
+        this.actionChoiceDialog.id = "action-choice-dialog";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = this.options.text?.mapClickChoiceTitle ?? "What do you want to do?";
+
+        const addRestaurantBtn = document.createElement("button");
+        addRestaurantBtn.type = "button";
+        addRestaurantBtn.className = "action-choice-btn";
+        addRestaurantBtn.textContent = this.options.text?.mapClickAddRestaurant ?? "Add a restaurant";
+        addRestaurantBtn.addEventListener("click", () => {
+            this.actionChoiceDialog?.close();
+            this.openAddRestaurantDialogAtLocation();
+        });
+
+        const moveOriginBtn = document.createElement("button");
+        moveOriginBtn.type = "button";
+        moveOriginBtn.className = "action-choice-btn";
+        moveOriginBtn.textContent = this.options.text?.mapClickMoveOrigin ?? "Move the starting point";
+        moveOriginBtn.addEventListener("click", () => {
+            this.actionChoiceDialog?.close();
+            this.moveOriginToLocation();
+        });
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "action-choice-btn cancel";
+        cancelBtn.textContent = this.options.text?.mapClickCancel ?? "Cancel";
+        cancelBtn.addEventListener("click", () => {
+            this.actionChoiceDialog?.close();
+            this.cancelLocationSelection();
+        });
+
+        form.appendChild(title);
+        form.appendChild(addRestaurantBtn);
+        form.appendChild(moveOriginBtn);
+        form.appendChild(cancelBtn);
+
+        this.actionChoiceDialog.appendChild(form);
+        document.body.appendChild(this.actionChoiceDialog);
+
+        this.actionChoiceDialog.addEventListener("click", (e) => {
+            if (e.target === this.actionChoiceDialog) {
+                this.cancelLocationSelection();
+                this.actionChoiceDialog?.close();
+            }
+        });
+    }
+
+    private addMapClickHandler() {
+        this.map?.on("click", (e: Leaflet.LeafletMouseEvent) => {
+            if (this.isSelectingLocationInDialog) {
+                this.onMapClickForLocationInDialog(e);
+                return;
+            }
+
+            const { lat, lng } = e.latlng;
+            if (this.tempMarker) {
+                this.map?.removeLayer(this.tempMarker);
+            }
+            
+            this.tempMarker = Leaflet.marker([lat, lng], {
+                icon: Leaflet.icon({
+                    iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
+                    iconSize: [32, 32],
+                    popupAnchor: [0, -16]
+                })
+            }).addTo(this.map!);
+
+            this.actionChoiceDialog?.showModal();
+        });
+    }
+
+    private startLocationSelectionInDialog() {
+        this.isSelectingLocationInDialog = true;
+        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+        if (locationInfo) {
+            locationInfo.textContent = this.options.text?.formLocationEditMode ?? "Click on the map to choose the location";
+            locationInfo.style.color = "#007bff";
+            locationInfo.style.borderColor = "#007bff";
+        }
+    }
+
+    private onMapClickForLocationInDialog(e: Leaflet.LeafletMouseEvent) {
+        if (!this.isSelectingLocationInDialog) return;
+
+        const { lat, lng } = e.latlng;
+
+        if (this.tempMarker) {
+            this.map?.removeLayer(this.tempMarker);
+        }
+
+        this.tempMarker = Leaflet.marker([lat, lng], {
+            icon: Leaflet.icon({
+                iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
+                iconSize: [32, 32],
+                popupAnchor: [0, -16]
+            })
+        }).addTo(this.map!);
+
+        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+
+        if (latInput) latInput.value = lat.toString();
+        if (lngInput) lngInput.value = lng.toString();
+        if (locationInfo) {
+            const selectedText = this.options.text?.formRestaurantLocationSelected ?? "Selected position: ";
+            locationInfo.textContent = `${selectedText}${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            locationInfo.style.color = "#28a745";
+            locationInfo.style.borderColor = "#28a745";
+        }
+
+        this.isSelectingLocationInDialog = false;
+        this.validateFormAfterLocationSelection();
+    }
+
+    private openAddRestaurantDialogAtLocation() {
+        if (!this.tempMarker || !this.addRestaurantDialog) return;
+
+        const position = this.tempMarker.getLatLng();
+        
+        const latInput = this.addRestaurantDialog.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog.querySelector("#restaurant-lng") as HTMLInputElement;
+        const locationInfo = this.addRestaurantDialog.querySelector("#location-info") as HTMLElement;
+
+        if (latInput) latInput.value = position.lat.toString();
+        if (lngInput) lngInput.value = position.lng.toString();
+        if (locationInfo) {
+            const selectedText = this.options.text?.formRestaurantLocationSelected ?? "Selected position: ";
+            locationInfo.textContent = `${selectedText}${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
+            locationInfo.style.color = "#28a745";
+            locationInfo.style.borderColor = "#28a745";
+        }
+
+        this.validateFormAfterLocationSelection();
+        this.addRestaurantDialog.showModal();
+    }
+
+    private moveOriginToLocation() {
+        if (!this.tempMarker) return;
+
+        const position = this.tempMarker.getLatLng();
+        
+        if (this.originMarker) {
+            this.originMarker.setLatLng(position);
+        }
+        
+        this.map?.setView(position, this.map.getZoom());
+        
+        this.map?.removeLayer(this.tempMarker);
+        this.tempMarker = null;
+    }
+
+    private validateFormAfterLocationSelection() {
+        const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
+        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
+        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+
+        if (confirmBtn && nameInput && latInput && lngInput) {
+            const isValid = nameInput.value.trim() !== "" &&
+                latInput.value !== "" &&
+                lngInput.value !== "";
+            confirmBtn.disabled = !isValid;
+        }
     }
 }
 

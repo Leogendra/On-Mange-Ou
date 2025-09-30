@@ -23,5 +23,11 @@
     "showRestaurantTooltip": "Make this restaurant visible",
     "deleteRestaurantConfirmation": "Are you sure you want to delete \"{name}\"?",
     "resetRestaurantsConfirmation": "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.",
-    "resetWeightsConfirmation": "Are you sure you want to reset all restaurant weights to 1?"
+    "resetWeightsConfirmation": "Are you sure you want to reset all restaurant weights to 1?",
+    "mapClickChoiceTitle": "What do you want to do?",
+    "mapClickAddRestaurant": "Add a restaurant",
+    "mapClickMoveOrigin": "Move the starting point",
+    "mapClickCancel": "Cancel",
+    "formLocationClickToEdit": "Click here to select on the map",
+    "formLocationEditMode": "Click on the map to choose the location"
 }

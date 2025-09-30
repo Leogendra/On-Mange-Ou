@@ -23,5 +23,11 @@
     "showRestaurantTooltip": "Rendre visible ce restaurant",
     "deleteRestaurantConfirmation": "Êtes-vous sûr de vouloir supprimer \"{name}\" ?",
     "resetRestaurantsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les restaurants aux valeurs par défaut ? Cela supprimera tous les restaurants ajoutés.",
-    "resetWeightsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les poids des restaurants à 1 ?"
+    "resetWeightsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les poids des restaurants à 1 ?",
+    "mapClickChoiceTitle": "Que voulez-vous faire ?",
+    "mapClickAddRestaurant": "Ajouter un restaurant",
+    "mapClickMoveOrigin": "Déplacer le point de départ",
+    "mapClickCancel": "Annuler",
+    "formLocationClickToEdit": "Cliquez ici pour sélectionner sur la carte",
+    "formLocationEditMode": "Cliquez sur la carte pour choisir la localisation"
 }
