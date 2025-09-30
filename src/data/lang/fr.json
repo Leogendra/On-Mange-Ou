@@ -1,9 +1,9 @@
 {
     "rollAction": "On mange où ?",
-    "resetAction": "⚠️ Réinitialiser",
+    "resetAction": "Réinitialiser",
     "resetWeights": "⚠️ Réinitialiser les poids",
-    "resetRestaurants": "Réinitialiser les restaurants",
-    "weightName": "Poids",
+    "resetRestaurants": "⚠️ Réinitialiser les restaurants",
+    "weightLabel": "Poids :",
     "weightDescription": "Plus le poids est élevé, plus le restaurant a de chances d'être choisi.",
     "weightResetConfirmation": "Êtes-vous sûr de vouloir réinitialiser les poids de tous les restaurants ?",
     "noRestaurant": "Aucun restaurant disponible",
@@ -23,5 +23,5 @@
     "showRestaurantTooltip": "Rendre visible ce restaurant",
     "deleteRestaurantConfirmation": "Êtes-vous sûr de vouloir supprimer \"{name}\" ?",
     "resetRestaurantsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les restaurants aux valeurs par défaut ? Cela supprimera tous les restaurants ajoutés.",
-    "weightLabel": "Weight: "
+    "resetWeightsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les poids des restaurants à 1 ?"
 }

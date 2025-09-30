@@ -25,7 +25,6 @@ type RandomChooserMapOptions = {
         resetAction?: string;
         resetWeights?: string;
         resetRestaurants?: string;
-        weightName?: string;
         weightDescription?: string;
         weightResetConfirmation?: string;
         noRestaurant?: string;
@@ -45,6 +44,7 @@ type RandomChooserMapOptions = {
         showRestaurantTooltip?: string;
         deleteRestaurantConfirmation?: string;
         resetRestaurantsConfirmation?: string;
+        resetWeightsConfirmation?: string;
         weightLabel?: string;
     };
 };
@@ -318,7 +318,7 @@ class RandomChooserMap {
             const weightElement = document.createElement("h3");
             weightElement.classList.add("random-chooser-map-control-choice-weight");
             weightElement.classList.add("random-chooser-map-control-choice-closable");
-            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight: "}${weight}`;
+            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
 
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
@@ -494,7 +494,10 @@ class RandomChooserMap {
     }
 
     private resetWeights() {
-        localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+        const confirmMessage = this.options.text?.resetWeightsConfirmation ?? "Are you sure you want to reset all restaurant weights?";
+        if (confirm(confirmMessage)) {
+            localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+        }
     }
 
     private resetToDefaultRestaurants() {

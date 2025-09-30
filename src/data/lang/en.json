@@ -1,9 +1,9 @@
 {
     "rollAction": "Where do we eat?",
-    "resetAction": "⚠️ Reset",
+    "resetAction": "Reset",
     "resetWeights": "⚠️ Reset weights",
-    "resetRestaurants": "Reset restaurants",
-    "weightName": "Weight",
+    "resetRestaurants": "⚠️ Reset restaurants",
+    "weightLabel": "Weight:",
     "weightDescription": "The higher the weight, the more likely the restaurant will be chosen.",
     "weightResetConfirmation": "Are you sure you want to reset all restaurant weights?",
     "noRestaurant": "No restaurant available",
@@ -23,5 +23,5 @@
     "showRestaurantTooltip": "Make this restaurant visible",
     "deleteRestaurantConfirmation": "Are you sure you want to delete \"{name}\"?",
     "resetRestaurantsConfirmation": "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.",
-    "weightLabel": "Weight: "
+    "resetWeightsConfirmation": "Are you sure you want to reset all restaurant weights to 1?"
 }
