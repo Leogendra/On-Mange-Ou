@@ -29,5 +29,11 @@
     "mapClickMoveOrigin": "Move the starting point",
     "mapClickCancel": "Cancel",
     "formLocationClickToEdit": "Click here to select on the map",
-    "formLocationEditMode": "Click on the map to choose the location"
+    "formLocationEditMode": "Click on the map to choose the location",
+    "settingsAction": "Settings",
+    "exportData": "📤 Export data",
+    "importData": "📥 Import data",
+    "exportSuccess": "Data exported successfully!",
+    "importSuccess": "Data imported successfully!",
+    "importError": "Import error: invalid file"
 }

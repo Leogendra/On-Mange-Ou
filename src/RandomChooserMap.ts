@@ -52,6 +52,12 @@ type RandomChooserMapOptions = {
         mapClickCancel?: string;
         formLocationClickToEdit?: string;
         formLocationEditMode?: string;
+        settingsAction?: string;
+        exportData?: string;
+        importData?: string;
+        exportSuccess?: string;
+        importSuccess?: string;
+        importError?: string;
     };
 };
 
@@ -197,7 +203,8 @@ class RandomChooserMap {
 
         button.innerText = this.options.text?.rollAction ?? "ROLL !";
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", (e) => {
+            e.stopPropagation();
             this.roll();
         });
 
@@ -208,23 +215,26 @@ class RandomChooserMap {
         const button = document.createElement("button");
 
         button.id = "random-chooser-map-control-reset";
-        button.innerText = this.options.text?.resetAction ?? "Reset";
+        button.innerText = this.options.text?.settingsAction ?? "Settings";
 
-        button.addEventListener("click", () => {
-            this.showResetMenu(button);
+        button.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.showSettingsMenu(button);
         });
 
         this.addControl(button, "bottomleft");
     }
 
-    private showResetMenu(button: HTMLElement) {
+    private showSettingsMenu(button: HTMLElement) {
+        // Créer le menu contextuel
         const menu = document.createElement("div");
         menu.className = "reset-menu";
 
         const resetWeightsOption = document.createElement("button");
         resetWeightsOption.textContent = this.options.text?.resetWeights ?? "Reset weights";
         resetWeightsOption.className = "reset-menu-item";
-        resetWeightsOption.addEventListener("click", () => {
+        resetWeightsOption.addEventListener("click", (e) => {
+            e.stopPropagation();
             this.resetWeights();
             document.body.removeChild(menu);
         });
@@ -232,21 +242,50 @@ class RandomChooserMap {
         const resetRestaurantsOption = document.createElement("button");
         resetRestaurantsOption.textContent = this.options.text?.resetRestaurants ?? "Reset restaurants";
         resetRestaurantsOption.className = "reset-menu-item";
-        resetRestaurantsOption.addEventListener("click", () => {
+        resetRestaurantsOption.addEventListener("click", (e) => {
+            e.stopPropagation();
             this.resetToDefaultRestaurants();
             document.body.removeChild(menu);
         });
 
+        const exportDataOption = document.createElement("button");
+        exportDataOption.textContent = this.options.text?.exportData ?? "📤 Export data";
+        exportDataOption.className = "reset-menu-item";
+        exportDataOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.exportData();
+            document.body.removeChild(menu);
+        });
+
+        const importDataOption = document.createElement("button");
+        importDataOption.textContent = this.options.text?.importData ?? "📥 Import data";
+        importDataOption.className = "reset-menu-item";
+        importDataOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.importData();
+            document.body.removeChild(menu);
+        });
+
+        menu.appendChild(exportDataOption);
+        menu.appendChild(importDataOption);
         menu.appendChild(resetWeightsOption);
         menu.appendChild(resetRestaurantsOption);
 
+        // Positionner le menu
         const rect = button.getBoundingClientRect();
         menu.style.position = "fixed";
         menu.style.left = rect.right + "px";
         menu.style.bottom = (window.innerHeight - rect.top) + "px";
 
+        // Ajouter au DOM
         document.body.appendChild(menu);
 
+        // Empêcher la propagation des clics sur le menu
+        menu.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
+
+        // Fermer le menu si on clique ailleurs
         const closeMenu = (e: MouseEvent) => {
             if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
                 document.body.removeChild(menu);
@@ -267,7 +306,8 @@ class RandomChooserMap {
         buttonTitle.title = this.options.text?.addRestaurantTooltip ?? "Add a restaurant";
 
         buttonContainer.appendChild(buttonTitle);
-        buttonContainer.addEventListener("click", () => {
+        buttonContainer.addEventListener("click", (e) => {
+            e.stopPropagation();
             if (this.addRestaurantDialog) {
                 this.addRestaurantDialog.showModal();
             }
@@ -285,7 +325,8 @@ class RandomChooserMap {
         buttonTitle.innerText = this.options.text?.resetRestaurants ?? "Reset restaurants";
 
         buttonContainer.appendChild(buttonTitle);
-        buttonContainer.addEventListener("click", () => {
+        buttonContainer.addEventListener("click", (e) => {
+            e.stopPropagation();
             this.resetToDefaultRestaurants();
         });
 
@@ -1013,6 +1054,143 @@ class RandomChooserMap {
                 lngInput.value !== "";
             confirmBtn.disabled = !isValid;
         }
+    }
+
+    private exportData() {
+        try {
+            // Récupérer toutes les données du localStorage
+            const restaurantsData = localStorage.getItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+            const weightsData = localStorage.getItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+
+            const exportObject = {
+                restaurants: restaurantsData ? JSON.parse(restaurantsData) : [],
+                weights: weightsData ? JSON.parse(weightsData) : {},
+                exportDate: new Date().toISOString(),
+                version: "1.0"
+            };
+
+            // Créer le fichier JSON
+            const dataStr = JSON.stringify(exportObject, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+            // Créer le lien de téléchargement
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `restaurants-data-${new Date().toISOString().split('T')[0]}.json`;
+
+            // Déclencher le téléchargement
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Nettoyer l'URL
+            URL.revokeObjectURL(link.href);
+
+            // Afficher un message de succès
+            alert(this.options.text?.exportSuccess ?? "Data exported successfully!");
+
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Error during export");
+        }
+    }
+
+    private importData() {
+        try {
+            // Créer un input file temporaire
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+
+            fileInput.addEventListener('change', (event) => {
+                const file = (event.target as HTMLInputElement).files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target?.result as string);
+
+                        // Valider la structure des données
+                        if (!this.validateImportData(importedData)) {
+                            alert(this.options.text?.importError ?? "Import error: invalid file");
+                            return;
+                        }
+
+                        // Sauvegarder les nouvelles données
+                        if (importedData.restaurants) {
+                            localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(importedData.restaurants));
+                        }
+                        if (importedData.weights) {
+                            localStorage.setItem(RandomChooserMap.WEIGHTS_STORAGE_KEY, JSON.stringify(importedData.weights));
+                        }
+
+                        // Recharger l'application avec les nouvelles données
+                        this.reloadWithImportedData();
+
+                        alert(this.options.text?.importSuccess ?? "Data imported successfully!");
+
+                    } catch (error) {
+                        console.error("Import error:", error);
+                        alert(this.options.text?.importError ?? "Import error: invalid file");
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            // Déclencher la sélection de fichier
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+
+        } catch (error) {
+            console.error("Import setup error:", error);
+            alert("Error during import setup");
+        }
+    }
+
+    private validateImportData(data: any): boolean {
+        // Vérifier la structure de base
+        if (!data || typeof data !== 'object') return false;
+
+        // Vérifier les restaurants
+        if (data.restaurants && Array.isArray(data.restaurants)) {
+            for (const restaurant of data.restaurants) {
+                if (!restaurant.name || !restaurant.location || 
+                    typeof restaurant.location.lat !== 'number' ||
+                    typeof restaurant.location.long !== 'number') {
+                    return false;
+                }
+            }
+        }
+
+        // Vérifier les poids
+        if (data.weights && typeof data.weights !== 'object') {
+            return false;
+        }
+
+        return true;
+    }
+
+    private reloadWithImportedData() {
+        // Nettoyer les marqueurs existants
+        for (const marker of this.markerCache.values()) {
+            if (this.map) {
+                this.map.removeLayer(marker);
+            }
+        }
+        this.markerCache.clear();
+        this.controlCache.clear();
+
+        // Recharger les restaurants depuis le localStorage
+        this.choices = this.loadRestaurantsFromStorage(this.defaultChoices);
+
+        // Recréer les marqueurs et contrôles
+        this.addRandomChoiceMarkers();
+        this.addRandomChoiceControls();
+        this.addInteractions();
     }
 }
 

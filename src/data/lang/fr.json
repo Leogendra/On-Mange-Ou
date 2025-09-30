@@ -29,5 +29,11 @@
     "mapClickMoveOrigin": "Déplacer le point de départ",
     "mapClickCancel": "Annuler",
     "formLocationClickToEdit": "Cliquez ici pour sélectionner sur la carte",
-    "formLocationEditMode": "Cliquez sur la carte pour choisir la localisation"
+    "formLocationEditMode": "Cliquez sur la carte pour choisir la localisation",
+    "settingsAction": "Paramètres",
+    "exportData": "📤 Exporter les données",
+    "importData": "📥 Importer les données",
+    "exportSuccess": "Données exportées avec succès !",
+    "importSuccess": "Données importées avec succès !",
+    "importError": "Erreur lors de l'importation : fichier invalide"
 }

@@ -430,7 +430,7 @@ body {
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    min-width: 200px;
+    min-width: 220px;
     overflow: hidden;
 }
 
@@ -450,8 +450,13 @@ body {
     background-color: #f8f9fa;
 }
 
-.reset-menu-item:first-child {
+.reset-menu-item:nth-child(1),
+.reset-menu-item:nth-child(2) {
     border-bottom: 1px solid #eee;
+}
+
+.reset-menu-item:nth-child(3) {
+    border-top: 1px solid #eee;
 }
 
 /* Action Choice Dialog */
@@ -623,7 +628,7 @@ body {
 
     /* Menu reset responsive */
     .reset-menu {
-        min-width: 160px;
+        min-width: 180px;
         font-size: 0.85rem;
     }
 
