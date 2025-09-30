@@ -23,6 +23,29 @@ type RandomChooserMapOptions = {
     text?: {
         rollAction?: string;
         resetAction?: string;
+        resetWeights?: string;
+        resetRestaurants?: string;
+        weightName?: string;
+        weightDescription?: string;
+        weightResetConfirmation?: string;
+        noRestaurant?: string;
+        noVisibleRestaurant?: string;
+        formAddRestaurant?: string;
+        formRestaurantName?: string;
+        formRestaurantAddress?: string;
+        formRestaurantLocation?: string;
+        formRestaurantLocationInfo?: string;
+        formRestaurantLocationSelected?: string;
+        formRestaurantWeight?: string;
+        formAddButton?: string;
+        formCancelButton?: string;
+        addRestaurantTooltip?: string;
+        deleteRestaurantTooltip?: string;
+        hideRestaurantTooltip?: string;
+        showRestaurantTooltip?: string;
+        deleteRestaurantConfirmation?: string;
+        resetRestaurantsConfirmation?: string;
+        weightLabel?: string;
     };
 };
 
@@ -62,15 +85,12 @@ class RandomChooserMap {
     }
 
     public async roll() {
-        // Filtrer les restaurants visibles uniquement
         const visibleChoices = this.choices.filter(choice => !this.hiddenRestaurants.has(choice));
-
+        
         if (visibleChoices.length === 0) {
-            alert("Aucun restaurant visible pour la sélection ! Veuillez rendre au moins un restaurant visible.");
+            alert(this.options.text?.noVisibleRestaurant ?? "No visible restaurant for selection! Please make at least one restaurant visible.");
             return;
-        }
-
-        const choicesSet = new Set(visibleChoices);
+        }        const choicesSet = new Set(visibleChoices);
         const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
         const randomIndex = visibleChoices.indexOf(randomChoice);
 
@@ -185,7 +205,7 @@ class RandomChooserMap {
         menu.className = "reset-menu";
 
         const resetWeightsOption = document.createElement("button");
-        resetWeightsOption.textContent = "Réinitialiser les poids";
+        resetWeightsOption.textContent = this.options.text?.resetWeights ?? "Reset weights";
         resetWeightsOption.className = "reset-menu-item";
         resetWeightsOption.addEventListener("click", () => {
             this.resetWeights();
@@ -193,7 +213,7 @@ class RandomChooserMap {
         });
 
         const resetRestaurantsOption = document.createElement("button");
-        resetRestaurantsOption.textContent = "Réinitialiser les restaurants";
+        resetRestaurantsOption.textContent = this.options.text?.resetRestaurants ?? "Reset restaurants";
         resetRestaurantsOption.className = "reset-menu-item";
         resetRestaurantsOption.addEventListener("click", () => {
             this.resetToDefaultRestaurants();
@@ -227,7 +247,7 @@ class RandomChooserMap {
 
         button.id = "random-chooser-map-control-add";
         button.innerText = "+";
-        button.title = "Ajouter un restaurant";
+        button.title = this.options.text?.addRestaurantTooltip ?? "Add a restaurant";
 
         button.addEventListener("click", () => {
             if (this.addRestaurantDialog) {
@@ -263,13 +283,13 @@ class RandomChooserMap {
             const weightElement = document.createElement("h3");
             weightElement.classList.add("random-chooser-map-control-choice-weight");
             weightElement.classList.add("random-chooser-map-control-choice-closable");
-            weightElement.innerText = `Weight: ${weight}`;
+            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight: "}${weight}`;
 
             // Bouton de suppression
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
             deleteButton.innerHTML = "×";
-            deleteButton.title = "Supprimer ce restaurant";
+            deleteButton.title = this.options.text?.deleteRestaurantTooltip ?? "Delete this restaurant";
             deleteButton.addEventListener("click", (e) => {
                 e.stopPropagation();
                 this.deleteRestaurant(choice);
@@ -279,7 +299,7 @@ class RandomChooserMap {
             const hideButton = document.createElement("button");
             hideButton.classList.add("random-chooser-map-control-choice-hide");
             hideButton.innerHTML = "−";
-            hideButton.title = "Masquer temporairement ce restaurant";
+            hideButton.title = this.options.text?.hideRestaurantTooltip ?? "Temporarily hide this restaurant";
             hideButton.addEventListener("click", (e) => {
                 e.stopPropagation();
                 this.toggleRestaurantVisibility(choice);
@@ -450,7 +470,9 @@ class RandomChooserMap {
     }
 
     private resetToDefaultRestaurants() {
-        if (confirm("Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.")) {
+        const confirmMessage = this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.";
+        if (confirm(confirmMessage)) {
+            // Supprimer tous les marqueurs actuels
             for (const marker of this.markerCache.values()) {
                 if (this.map) {
                     this.map.removeLayer(marker);
@@ -507,8 +529,8 @@ class RandomChooserMap {
                 control.classList.remove("hidden-restaurant");
                 const hideButton = control.querySelector(".random-chooser-map-control-choice-hide") as HTMLButtonElement;
                 if (hideButton) {
-                    hideButton.innerHTML = "-";
-                    hideButton.title = "Masquer temporairement ce restaurant";
+                    hideButton.innerHTML = "−";
+                    hideButton.title = this.options.text?.hideRestaurantTooltip ?? "Temporarily hide this restaurant";
                 }
             }
         } else {
@@ -525,7 +547,7 @@ class RandomChooserMap {
                 const hideButton = control.querySelector(".random-chooser-map-control-choice-hide") as HTMLButtonElement;
                 if (hideButton) {
                     hideButton.innerHTML = "+";
-                    hideButton.title = "Rendre visible ce restaurant";
+                    hideButton.title = this.options.text?.showRestaurantTooltip ?? "Make this restaurant visible";
                 }
             }
         }
@@ -539,15 +561,16 @@ class RandomChooserMap {
         form.method = "dialog";
 
         const title = document.createElement("h2");
-        title.textContent = "Ajouter un restaurant";
+        title.textContent = this.options.text?.formAddRestaurant ?? "Add a restaurant";
 
+        // Groupe nom
         const nameGroup = document.createElement("div");
         nameGroup.className = "form-group";
-
+        
         const nameLabel = document.createElement("label");
         nameLabel.htmlFor = "restaurant-name";
-        nameLabel.textContent = "Nom du restaurant*:";
-
+        nameLabel.textContent = this.options.text?.formRestaurantName ?? "Restaurant name:";
+        
         const nameInput = document.createElement("input");
         nameInput.type = "text";
         nameInput.id = "restaurant-name";
@@ -557,13 +580,14 @@ class RandomChooserMap {
         nameGroup.appendChild(nameLabel);
         nameGroup.appendChild(nameInput);
 
+        // Groupe adresse
         const addressGroup = document.createElement("div");
         addressGroup.className = "form-group";
-
+        
         const addressLabel = document.createElement("label");
         addressLabel.htmlFor = "restaurant-address";
-        addressLabel.textContent = "Adresse:";
-
+        addressLabel.textContent = this.options.text?.formRestaurantAddress ?? "Address:";
+        
         const addressInput = document.createElement("input");
         addressInput.type = "text";
         addressInput.id = "restaurant-address";
@@ -575,13 +599,13 @@ class RandomChooserMap {
 
         const locationGroup = document.createElement("div");
         locationGroup.className = "form-group";
-
+        
         const locationLabel = document.createElement("label");
-        locationLabel.textContent = "Localisation:";
-
+        locationLabel.textContent = this.options.text?.formRestaurantLocation ?? "Location:";
+        
         const locationInfo = document.createElement("p");
         locationInfo.id = "location-info";
-        locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+        locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
 
         const latInput = document.createElement("input");
         latInput.type = "hidden";
@@ -600,16 +624,16 @@ class RandomChooserMap {
 
         const buttonsDiv = document.createElement("div");
         buttonsDiv.className = "dialog-buttons";
-
+        
         const cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.id = "cancel-add";
-        cancelBtn.textContent = "Annuler";
-
+        cancelBtn.textContent = this.options.text?.formCancelButton ?? "Cancel";
+        
         const confirmBtn = document.createElement("button");
         confirmBtn.type = "submit";
         confirmBtn.id = "confirm-add";
-        confirmBtn.textContent = "Ajouter";
+        confirmBtn.textContent = this.options.text?.formAddButton ?? "Add";
         confirmBtn.disabled = true;
 
         buttonsDiv.appendChild(cancelBtn);
@@ -685,7 +709,7 @@ class RandomChooserMap {
         this.isSelectingLocation = true;
         const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
         if (locationInfo) {
-            locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+            locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
             locationInfo.style.color = "#007bff";
         }
 
@@ -716,7 +740,8 @@ class RandomChooserMap {
         if (latInput) latInput.value = lat.toString();
         if (lngInput) lngInput.value = lng.toString();
         if (locationInfo) {
-            locationInfo.textContent = `Selected location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            const selectedText = this.options.text?.formRestaurantLocationSelected ?? "Selected position: ";
+            locationInfo.textContent = `${selectedText}${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             locationInfo.style.color = "#28a745";
         }
 
@@ -770,7 +795,7 @@ class RandomChooserMap {
         if (lngInput) lngInput.value = "";
         if (confirmBtn) confirmBtn.disabled = true;
         if (locationInfo) {
-            locationInfo.textContent = "Cliquez sur la carte pour sélectionner la position";
+            locationInfo.textContent = this.options.text?.formRestaurantLocationInfo ?? "Click on the map to select the position";
             locationInfo.style.color = "";
         }
     }
@@ -810,7 +835,7 @@ class RandomChooserMap {
                 }));
             }
         } catch (error) {
-            console.warn('Erreur lors du chargement des restaurants depuis localStorage:', error);
+            console.warn(`Error while loading restaurants from localStorage: ${error}`);
             localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
         }
 

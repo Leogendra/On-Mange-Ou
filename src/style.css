@@ -1,3 +1,58 @@
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    --primary-color: #a7bf4e;
+    --secondary-color: #f2ac29;
+    --accent-color: #f24535;
+    --shake-intensity: 2px;
+
+    --primary-color-hover: #8fa440;
+    --secondary-color-hover: #d9991f;
+    --accent-color-hover: #d93025;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    width: 100vw;
+    height: 100vh;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+#random-chooser-map-control-roll {
+    padding: 1rem 2rem;
+
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 3rem;
+
+    color: #eef2d0;
+    font-size: 2rem;
+
+    cursor: pointer;
+    transition: all;
+}
+
+#random-chooser-map-control-roll:hover {
+    animation-name: excited;
+    animation-duration: 100ms;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+
 @keyframes excited {
     0% {
         transform: translate(0, 0);
@@ -37,57 +92,6 @@
         transform: translate(var(--shake-intensity),
                 calc(-1 * var(--shake-intensity)));
     }
-}
-
-:root {
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-
-    --primary-color: #a7bf4e;
-    --secondary-color: #f2ac29;
-    --accent-color: #f24535;
-    --shake-intensity: 2px;
-}
-
-html,
-body {
-    margin: 0;
-    padding: 0;
-
-    width: 100vw;
-    height: 100vh;
-}
-
-#map {
-    width: 100%;
-    height: 100%;
-}
-
-#random-chooser-map-control-roll {
-    padding: 1rem 2rem;
-
-    background-color: var(--accent-color);
-    border: none;
-    border-radius: 3rem;
-
-    color: #eef2d0;
-    font-size: 2rem;
-
-    cursor: pointer;
-    transition: all;
-}
-
-#random-chooser-map-control-roll:hover {
-    animation-name: excited;
-    animation-duration: 100ms;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
 }
 
 #random-chooser-map-control-roll:active {
@@ -148,7 +152,6 @@ body {
     background-color: var(--primary-color);
 }
 
-/* Container pour le titre et les boutons d'action */
 .random-chooser-map-control-choice-title-container {
     display: flex;
     justify-content: space-between;
@@ -160,20 +163,18 @@ body {
     flex: 1;
 }
 
-/* Container pour les boutons d'action (masquer et supprimer) */
 .random-chooser-map-control-choice-actions {
     display: flex;
     gap: 0.25rem;
     align-items: center;
 }
 
-/* Bouton de masquage temporaire */
 .random-chooser-map-control-choice-hide {
     width: 1.5rem;
     height: 1.5rem;
     min-width: 1.5rem;
     
-    background-color: var(--secondary-color);
+    background-color: var(--secondary-color-hover);
     border: none;
     border-radius: 50%;
     
@@ -202,7 +203,6 @@ body {
     transform: scale(0.9);
 }
 
-/* Restaurant masqué temporairement */
 .random-chooser-map-control-choice.hidden-restaurant {
     opacity: 0.5;
     background-color: #e0e0e0;
@@ -213,7 +213,6 @@ body {
     color: #888;
 }
 
-/* Masquer les boutons d'action par défaut, les afficher au hover */
 .random-chooser-map-control-choice .random-chooser-map-control-choice-actions {
     opacity: 0;
     transform: scale(0.8);
@@ -225,7 +224,6 @@ body {
     transform: scale(1);
 }
 
-/* Styles spécifiques pour les boutons individuels */
 .random-chooser-map-control-choice .random-chooser-map-control-choice-delete,
 .random-chooser-map-control-choice .random-chooser-map-control-choice-hide {
     opacity: 0.7;
@@ -238,7 +236,6 @@ body {
     transform: scale(1.1);
 }
 
-/* Bouton de suppression */
 .random-chooser-map-control-choice-delete {
     width: 1.5rem;
     height: 1.5rem;
@@ -273,7 +270,6 @@ body {
     transform: scale(0.9);
 }
 
-/* Styles pour le bouton + */
 #random-chooser-map-control-add {
     width: 3rem;
     height: 3rem;
@@ -303,7 +299,6 @@ body {
     transform: scale(0.95);
 }
 
-/* Styles pour le dialog */
 #add-restaurant-dialog {
     width: fit-content;
     min-width: 400px;
@@ -403,7 +398,6 @@ body {
     cursor: not-allowed;
 }
 
-/* Menu de réinitialisation */
 .reset-menu {
     background: white;
     border: 1px solid #ddd;

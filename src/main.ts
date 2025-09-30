@@ -6,18 +6,24 @@ import { Location } from "./utils/location";
 import RESTAURANTS from "./utils/restaurants";
 import RandomChooserMap from "./RandomChooserMap";
 
-new RandomChooserMap(RESTAURANTS, {
-	view: {
-		origin: Location.at(43.609935462710816, 3.885456818340369),
-		zoom: 16
-	},
-	style: {
-		originMarker: PERSON_ICON,
-		randomMarker: RESTAURANT_ICON,
-		markerSize: 64
-	},
-	text: {
-		rollAction: "On mange où ?",
-		resetAction: "⚠️ Réinitialiser"
-	}
-}).mountOn("map");
+import config from "./data/config.json";
+
+
+async function init() {
+    const languageKeys = await import(`./data/lang/${config.language}.json`);
+
+    new RandomChooserMap(RESTAURANTS, {
+        view: {
+            origin: Location.at(config.initialLat, config.initialLng),
+            zoom: config.initialZoom
+        },
+        style: {
+            originMarker: PERSON_ICON,
+            randomMarker: RESTAURANT_ICON,
+            markerSize: 64
+        },
+        text: languageKeys.default
+    }).mountOn("map");
+}
+
+init();
