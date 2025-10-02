@@ -18,6 +18,7 @@ interface AppSettings {
         };
     }>;
     weights: { [key: string]: number };
+    weightsEnabled?: boolean;
     originPosition?: {
         lat: number;
         lng: number;
@@ -82,6 +83,9 @@ type RandomChooserMapOptions = {
         editWeightsTitle?: string;
         editWeightsSave?: string;
         editWeightsCancel?: string;
+        toggleWeights?: string;
+        weightsEnabled?: string;
+        weightsDisabled?: string;
     };
 };
 
@@ -131,9 +135,22 @@ class RandomChooserMap {
         if (visibleChoices.length === 0) {
             alert(this.options.text?.noVisibleRestaurant ?? "No visible restaurant for selection! Please make at least one restaurant visible.");
             return;
-        }        const choicesSet = new Set(visibleChoices);
-        const randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
-        const randomIndex = visibleChoices.indexOf(randomChoice);
+        }
+
+        // Choisir selon que les poids sont activés ou non
+        let randomChoice: RandomChoice;
+        let randomIndex: number;
+        
+        if (this.areWeightsEnabled()) {
+            // Utiliser les poids pondérés
+            const choicesSet = new Set(visibleChoices);
+            randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
+            randomIndex = visibleChoices.indexOf(randomChoice);
+        } else {
+            // Simple random sans poids
+            randomIndex = Math.floor(Math.random() * visibleChoices.length);
+            randomChoice = visibleChoices[randomIndex];
+        }
 
         const addButton = document.getElementById("button-add-restaurant");
         if (addButton !== null) { addButton.style.display = "none"; }
@@ -154,7 +171,12 @@ class RandomChooserMap {
         }
 
         this.controlCache.get(randomChoice)?.click();
-        this.updateWeight(choicesSet, randomChoice);
+        
+        // Mettre à jour les poids seulement si les poids sont activés
+        if (this.areWeightsEnabled()) {
+            const choicesSet = new Set(visibleChoices);
+            this.updateWeight(choicesSet, randomChoice);
+        }
 
         await wait(1000);
         if (addButton !== null) { addButton.style.display = "flex"; }
@@ -302,10 +324,28 @@ class RandomChooserMap {
             document.body.removeChild(menu);
         });
 
+        const toggleWeightsOption = document.createElement("button");
+        const weightsEnabled = this.areWeightsEnabled();
+        toggleWeightsOption.textContent = weightsEnabled 
+            ? (this.options.text?.weightsEnabled ?? "Weights: Enabled")
+            : (this.options.text?.weightsDisabled ?? "Weights: Disabled");
+        toggleWeightsOption.className = "reset-menu-item";
+        toggleWeightsOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.toggleWeights();
+            document.body.removeChild(menu);
+        });
+
         menu.appendChild(exportDataOption);
         menu.appendChild(importDataOption);
-        menu.appendChild(editWeightsOption);
-        menu.appendChild(resetWeightsOption);
+        menu.appendChild(toggleWeightsOption);
+        
+        // N'afficher l'option d'édition des poids que si les poids sont activés
+        if (weightsEnabled) {
+            menu.appendChild(editWeightsOption);
+            menu.appendChild(resetWeightsOption);
+        }
+        
         menu.appendChild(resetRestaurantsOption);
 
         const rect = button.getBoundingClientRect();
@@ -396,6 +436,12 @@ class RandomChooserMap {
             weightElement.classList.add("random-chooser-map-control-choice-weight");
             weightElement.classList.add("random-chooser-map-control-choice-closable");
             weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
+
+            // Afficher les poids seulement si ils sont activés
+            const weightsEnabled = this.areWeightsEnabled();
+            if (!weightsEnabled) {
+                weightElement.style.display = "none";
+            }
 
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
@@ -1460,6 +1506,20 @@ class RandomChooserMap {
         const currentSettings = this.loadSettings();
         const newSettings = { ...currentSettings, ...updates };
         this.saveSettings(newSettings);
+    }
+
+    private areWeightsEnabled(): boolean {
+        const settings = this.loadSettings();
+        return settings.weightsEnabled !== false; // Par défaut activé
+    }
+
+    private toggleWeights() {
+        const currentState = this.areWeightsEnabled();
+        this.updateSettings({ weightsEnabled: !currentState });
+        
+        // Rafraîchir l'affichage des contrôles
+        this.addRandomChoiceControls();
+        this.addInteractions();
     }
 
     private loadOriginPosition(): Location | null {

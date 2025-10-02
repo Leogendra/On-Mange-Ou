@@ -42,5 +42,8 @@
     "editWeights": "⚖️ Modifier les poids",
     "editWeightsTitle": "Modifier les poids des restaurants",
     "editWeightsSave": "Sauvegarder",
-    "editWeightsCancel": "Annuler"
+    "editWeightsCancel": "Annuler",
+    "toggleWeights": "⚖️ Activer/Désactiver les poids",
+    "weightsEnabled": "Poids : Activés",
+    "weightsDisabled": "Poids : Désactivés"
 }

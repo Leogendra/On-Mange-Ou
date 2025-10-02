@@ -42,5 +42,8 @@
     "editWeights": "⚖️ Edit weights",
     "editWeightsTitle": "Edit restaurant weights",
     "editWeightsSave": "Save",
-    "editWeightsCancel": "Cancel"
+    "editWeightsCancel": "Cancel",
+    "toggleWeights": "⚖️ Enable/Disable weights",
+    "weightsEnabled": "Weights: Enabled",
+    "weightsDisabled": "Weights: Disabled"
 }
