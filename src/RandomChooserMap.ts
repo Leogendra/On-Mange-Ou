@@ -92,6 +92,8 @@ type RandomChooserMapOptions = {
         toggleWeights?: string;
         weightsEnabled?: string;
         weightsDisabled?: string;
+        exportUrl?: string;
+        urlExportSuccess?: string;
     };
 };
 
@@ -198,6 +200,9 @@ class RandomChooserMap {
 
 
     public mountOn(root: HTMLElement | string) {
+        // Check for URL parameters and import data if present
+        this.parseUrlParameters();
+        
         this.map = Leaflet.map(root);
         this.initOrigin();
         this.addTileSet();
@@ -348,7 +353,17 @@ class RandomChooserMap {
             document.body.removeChild(menu);
         });
 
+        const exportUrlOption = document.createElement("button");
+        exportUrlOption.textContent = this.options.text?.exportUrl ?? "🔗 Export via URL";
+        exportUrlOption.className = "reset-menu-item";
+        exportUrlOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.exportViaUrl();
+            document.body.removeChild(menu);
+        });
+
         menu.appendChild(exportDataOption);
+        menu.appendChild(exportUrlOption);
         menu.appendChild(importDataOption);
         menu.appendChild(toggleWeightsOption);
         
@@ -1386,6 +1401,118 @@ class RandomChooserMap {
         }
     }
 
+    private exportViaUrl() {
+        try {
+            const settings = this.loadSettings();
+
+            // Create optimized URL parameters with shortest possible names
+            const params = new URLSearchParams();
+            
+            // r = restaurants
+            if (settings.restaurants && settings.restaurants.length > 0) {
+                const restaurantsData = settings.restaurants.map(r => ({
+                    n: r.name,                    // n = name
+                    a: r.address,                // a = address  
+                    lt: r.location.lat,          // lt = latitude
+                    lg: r.location.long,         // lg = longitude
+                    ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {}) // w = weight (only if not default)
+                }));
+                params.set('r', JSON.stringify(restaurantsData));
+            }
+
+            // o = origin position
+            if (settings.originPosition) {
+                params.set('o', `${settings.originPosition.lat},${settings.originPosition.lng}`);
+            }
+
+            // we = weights enabled
+            if (settings.weightsEnabled !== undefined) {
+                params.set('we', settings.weightsEnabled ? '1' : '0');
+            }
+
+            // Generate URL
+            const baseUrl = window.location.origin + window.location.pathname;
+            const url = `${baseUrl}?${params.toString()}`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
+            }).catch(() => {
+                // Fallback if clipboard API fails
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
+            });
+
+        } catch (error) {
+            console.error("URL export error:", error);
+            alert("Error during URL export");
+        }
+    }
+
+    private parseUrlParameters() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.size === 0) {
+                return; // No parameters to parse
+            }
+
+            const settings = this.loadSettings();
+            let hasChanges = false;
+
+            // Parse restaurants (r parameter)
+            const restaurantsParam = urlParams.get('r');
+            if (restaurantsParam) {
+                try {
+                    const restaurantsData = JSON.parse(restaurantsParam);
+                    if (Array.isArray(restaurantsData)) {
+                        settings.restaurants = restaurantsData.map(r => ({
+                            name: r.n,                    // n = name
+                            address: r.a,                // a = address
+                            location: {
+                                lat: r.lt,               // lt = latitude
+                                long: r.lg               // lg = longitude
+                            },
+                            weight: r.w !== undefined ? r.w : 1  // w = weight (default to 1)
+                        }));
+                        hasChanges = true;
+                    }
+                } catch (e) {
+                    console.error("Error parsing restaurants from URL:", e);
+                }
+            }
+
+            // Parse origin position (o parameter)
+            const originParam = urlParams.get('o');
+            if (originParam) {
+                const [lat, lng] = originParam.split(',').map(Number);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    settings.originPosition = { lat, lng };
+                    hasChanges = true;
+                }
+            }
+
+            // Parse weights enabled (we parameter)
+            const weightsEnabledParam = urlParams.get('we');
+            if (weightsEnabledParam !== null) {
+                settings.weightsEnabled = weightsEnabledParam === '1';
+                hasChanges = true;
+            }
+
+            if (hasChanges) {
+                this.saveSettings(settings);
+                this.choices = this.loadRestaurantsFromStorage(this.defaultChoices);
+            }
+
+        } catch (error) {
+            console.error("Error parsing URL parameters:", error);
+        }
+    }
 
     private importData() {
         try {
