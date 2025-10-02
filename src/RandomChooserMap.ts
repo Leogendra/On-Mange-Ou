@@ -2,11 +2,15 @@ import Leaflet from "leaflet";
 import { Location } from "./utils/location";
 import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
+
+
+
 export interface RandomChoice {
     name: string;
     description: string;
     location: Location;
 }
+
 
 interface AppSettings {
     restaurants: Array<{
@@ -16,8 +20,8 @@ interface AppSettings {
             lat: number;
             long: number;
         };
+        weight?: number;
     }>;
-    weights: { [key: string]: number };
     weightsEnabled?: boolean;
     originPosition?: {
         lat: number;
@@ -26,7 +30,9 @@ interface AppSettings {
     version: string;
 }
 
+
 type RandomChoices = Array<RandomChoice>;
+
 
 type RandomChooserMapOptions = {
     view?: {
@@ -89,11 +95,13 @@ type RandomChooserMapOptions = {
     };
 };
 
+
 function wait(timeout: number): Promise<void> {
     return new Promise((success, _) => {
         setInterval(success, timeout);
     });
 }
+
 
 class RandomChooserMap {
     private static readonly SETTINGS_STORAGE_KEY = "settings";
@@ -137,17 +145,15 @@ class RandomChooserMap {
             return;
         }
 
-        // Choisir selon que les poids sont activés ou non
         let randomChoice: RandomChoice;
         let randomIndex: number;
         
         if (this.areWeightsEnabled()) {
-            // Utiliser les poids pondérés
             const choicesSet = new Set(visibleChoices);
             randomChoice = weightedRandom(this.recoverSavedWeights(choicesSet));
             randomIndex = visibleChoices.indexOf(randomChoice);
-        } else {
-            // Simple random sans poids
+        } 
+        else {
             randomIndex = Math.floor(Math.random() * visibleChoices.length);
             randomChoice = visibleChoices[randomIndex];
         }
@@ -172,7 +178,6 @@ class RandomChooserMap {
 
         this.controlCache.get(randomChoice)?.click();
         
-        // Mettre à jour les poids seulement si les poids sont activés
         if (this.areWeightsEnabled()) {
             const choicesSet = new Set(visibleChoices);
             this.updateWeight(choicesSet, randomChoice);
@@ -191,6 +196,7 @@ class RandomChooserMap {
         }
     }
 
+
     public mountOn(root: HTMLElement | string) {
         this.map = Leaflet.map(root);
         this.initOrigin();
@@ -206,6 +212,7 @@ class RandomChooserMap {
         this.addMapClickHandler();
     }
 
+
     private initOrigin() {
         if (this.options.view !== undefined) {
             const savedOriginPosition = this.loadOriginPosition();
@@ -220,6 +227,7 @@ class RandomChooserMap {
         }
     }
 
+
     private addTileSet() {
         Leaflet.tileLayer(
             "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
@@ -231,6 +239,7 @@ class RandomChooserMap {
             }
         ).addTo(this.map!);
     }
+
 
     private addRandomChoiceMarkers() {
         if (this.options.style?.randomMarker !== undefined) {
@@ -245,6 +254,7 @@ class RandomChooserMap {
             }
         }
     }
+
 
     private addRollControl() {
         const button = document.createElement("button");
@@ -261,6 +271,7 @@ class RandomChooserMap {
         this.addControl(button, "bottomright");
     }
 
+
     private addResetControl() {
         const button = document.createElement("button");
 
@@ -274,6 +285,7 @@ class RandomChooserMap {
 
         this.addControl(button, "bottomleft");
     }
+
 
     private showSettingsMenu(button: HTMLElement) {
         const menu = document.createElement("div");
@@ -340,7 +352,6 @@ class RandomChooserMap {
         menu.appendChild(importDataOption);
         menu.appendChild(toggleWeightsOption);
         
-        // N'afficher l'option d'édition des poids que si les poids sont activés
         if (weightsEnabled) {
             menu.appendChild(editWeightsOption);
             menu.appendChild(resetWeightsOption);
@@ -368,26 +379,6 @@ class RandomChooserMap {
         setTimeout(() => document.addEventListener("click", closeMenu), 0);
     }
 
-    private addAddRestaurantCard() {
-        const buttonContainer = document.createElement("div");
-        buttonContainer.classList.add("random-chooser-map-control-choice", "add");
-        buttonContainer.id = "button-add-restaurant";
-
-        const buttonTitle = document.createElement("div");
-        buttonTitle.classList.add("random-chooser-map-control-choice-title-container");
-        buttonTitle.innerText = "+";
-        buttonTitle.title = this.options.text?.addRestaurantTooltip ?? "Add a restaurant";
-
-        buttonContainer.appendChild(buttonTitle);
-        buttonContainer.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (this.addRestaurantDialog) {
-                this.addRestaurantDialog.showModal();
-            }
-        });
-
-        return buttonContainer;
-    }
 
     private addResetRestaurantCard() {
         const buttonContainer = document.createElement("div");
@@ -405,6 +396,7 @@ class RandomChooserMap {
 
         return buttonContainer;
     }
+
 
     private addRandomChoiceControls() {
         const existing = document.getElementById("random-chooser-map-control-choices");
@@ -437,7 +429,6 @@ class RandomChooserMap {
             weightElement.classList.add("random-chooser-map-control-choice-closable");
             weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
 
-            // Afficher les poids seulement si ils sont activés
             const weightsEnabled = this.areWeightsEnabled();
             if (!weightsEnabled) {
                 weightElement.style.display = "none";
@@ -485,6 +476,7 @@ class RandomChooserMap {
         this.addControl(container, "topright");
     }
 
+
     private addInteractions() {
         for (const [choice, control] of this.controlCache.entries()) {
             control.addEventListener("click", (e) => {
@@ -493,6 +485,7 @@ class RandomChooserMap {
             });
         }
     }
+
 
     private addMarker(
         location: Location,
@@ -516,6 +509,7 @@ class RandomChooserMap {
         return marker;
     }
 
+
     private addControl(
         element: HTMLElement,
         position: Leaflet.ControlPosition
@@ -527,6 +521,7 @@ class RandomChooserMap {
         return control;
     }
 
+
     private selectChoice(choice: number | RandomChoice) {
         if (Number.isInteger(choice)) {
             choice = this.choices[Number(choice)];
@@ -537,11 +532,13 @@ class RandomChooserMap {
             ?.classList.add("selected");
     }
 
+
     private unselectAll() {
         for (const control of this.controlCache.values()) {
             control.classList.remove("selected");
         }
     }
+
 
     private recoverSavedWeights(
         items: Set<RandomChoice>
@@ -550,53 +547,51 @@ class RandomChooserMap {
         const settings = this.loadSettings();
 
         for (const item of items) {
+            const savedRestaurant = settings.restaurants.find(r => r.name === item.name);
+            const weight = savedRestaurant?.weight || 1;
+            
             weights.add({
                 value: item,
-                weight: 1
+                weight: weight
             });
-        }
-
-        if (settings.weights) {
-            for (const [name, weight] of Object.entries(settings.weights)) {
-                for (const item of weights) {
-                    if (item.value.name === name) {
-                        item.weight = weight;
-                    }
-                }
-            }
         }
 
         return weights;
     }
 
+
     private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
         const settings = this.loadSettings();
-        let weights: { [key: string]: number } = { ...settings.weights };
-
-        for (const item of items) {
-            if (weights[item.name] === undefined) {
-                weights[item.name] = 1;
+        const updatedRestaurants = settings.restaurants.map(restaurant => {
+            const isTargetRestaurant = Array.from(items).some(item => item.name === restaurant.name);
+            
+            if (isTargetRestaurant) {
+                const currentWeight = restaurant.weight || 1;
+                if (restaurant.name === decrement.name) {
+                    return { ...restaurant, weight: 0 };
+                } else {
+                    return { ...restaurant, weight: currentWeight + 1 };
+                }
             }
-        }
+            return restaurant;
+        });
 
-        for (const [name, weight] of Object.entries(weights)) {
-            if (decrement.name === name) { 
-                weights[name] = 0; 
-            } else { 
-                weights[name] = weight + 1; 
-            }
-        }
-
-
-        this.updateSettings({ weights });
+        this.updateSettings({ restaurants: updatedRestaurants });
     }
+
 
     private resetWeights() {
         const confirmMessage = this.options.text?.resetWeightsConfirmation ?? "Are you sure you want to reset all restaurant weights?";
         if (confirm(confirmMessage)) {
-            this.updateSettings({ weights: {} });
+            const settings = this.loadSettings();
+            const updatedRestaurants = settings.restaurants.map(restaurant => ({
+                ...restaurant,
+                weight: 1
+            }));
+            this.updateSettings({ restaurants: updatedRestaurants });
         }
     }
+
 
     private resetToDefaultRestaurants() {
         const confirmMessage = this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.";
@@ -621,6 +616,7 @@ class RandomChooserMap {
         }
     }
 
+
     private deleteRestaurant(choice: RandomChoice) {
         const index = this.choices.indexOf(choice);
         if (index > -1) {
@@ -639,6 +635,7 @@ class RandomChooserMap {
         this.addInteractions();
         this.saveRestaurantsToStorage();
     }
+
 
     private toggleRestaurantVisibility(choice: RandomChoice) {
         if (this.hiddenRestaurants.has(choice)) {
@@ -677,6 +674,7 @@ class RandomChooserMap {
             }
         }
     }
+
 
     private createAddRestaurantDialog() {
         this.addRestaurantDialog = document.createElement("dialog");
@@ -785,6 +783,7 @@ class RandomChooserMap {
         this.setupDialogEvents();
     }
 
+
     private setupLocationInput() {
         if (!this.addRestaurantDialog) return;
 
@@ -878,6 +877,7 @@ class RandomChooserMap {
         });
     }
 
+
     private setupDialogEvents() {
         if (!this.addRestaurantDialog) return;
 
@@ -932,12 +932,14 @@ class RandomChooserMap {
         addressInput?.addEventListener("input", validateForm);
     }
 
+
     private cancelLocationSelection() {
         if (this.tempMarker) {
             this.map?.removeLayer(this.tempMarker);
             this.tempMarker = null;
         }
     }
+
 
     private validateRestaurantForm(): boolean {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
@@ -948,6 +950,7 @@ class RandomChooserMap {
             latInput?.value !== "" &&
             lngInput?.value !== "";
     }
+
 
     private validateAndSetCoordinates(coordinatesStr: string): boolean {
         if (!coordinatesStr.trim() || !this.addRestaurantDialog) {
@@ -1008,6 +1011,7 @@ class RandomChooserMap {
         return false;
     }
 
+
     private resetForm() {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
         const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
@@ -1058,6 +1062,7 @@ class RandomChooserMap {
         }
     }
 
+
     private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
         const newRestaurant: RandomChoice = {
             name: name,
@@ -1081,6 +1086,7 @@ class RandomChooserMap {
         this.saveRestaurantsToStorage();
     }
 
+
     private loadRestaurantsFromStorage(defaultChoices: RandomChoices): RandomChoices {
         try {
             const settings = this.loadSettings();
@@ -1099,21 +1105,29 @@ class RandomChooserMap {
         return [...defaultChoices];
     }
 
+
     private saveRestaurantsToStorage() {
         this.saveRestaurantsToStorageInternal(this.choices);
     }
 
+
     private saveRestaurantsToStorageInternal(choices: RandomChoices) {
-        const restaurantsData = choices.map(choice => ({
-            name: choice.name,
-            address: choice.description,
-            location: {
-                lat: choice.location.lat,
-                long: choice.location.lon
-            }
-        }));
+        const settings = this.loadSettings();
+        const restaurantsData = choices.map(choice => {
+            const existingRestaurant = settings.restaurants.find(r => r.name === choice.name);
+            return {
+                name: choice.name,
+                address: choice.description,
+                location: {
+                    lat: choice.location.lat,
+                    long: choice.location.lon
+                },
+                weight: existingRestaurant?.weight || 1
+            };
+        });
         this.updateSettings({ restaurants: restaurantsData });
     }
+
 
     private createEditWeightsDialog() {
         this.editWeightsDialog = document.createElement("dialog");
@@ -1151,7 +1165,6 @@ class RandomChooserMap {
         this.editWeightsDialog.appendChild(form);
         document.body.appendChild(this.editWeightsDialog);
 
-        // Event listeners
         cancelBtn.addEventListener("click", () => {
             this.editWeightsDialog?.close();
         });
@@ -1169,19 +1182,17 @@ class RandomChooserMap {
         });
     }
 
+
     private showEditWeightsDialog() {
         if (!this.editWeightsDialog) return;
 
         const weightsContainer = this.editWeightsDialog.querySelector(".weights-container") as HTMLElement;
         if (!weightsContainer) return;
 
-        // Clear existing content
         weightsContainer.innerHTML = "";
 
         const settings = this.loadSettings();
-        const currentWeights = settings.weights || {};
 
-        // Create weight inputs for each restaurant
         this.choices.forEach(choice => {
             const weightRow = document.createElement("div");
             weightRow.className = "weight-row";
@@ -1190,11 +1201,14 @@ class RandomChooserMap {
             nameLabel.textContent = choice.name;
             nameLabel.className = "weight-label";
 
+            const savedRestaurant = settings.restaurants.find(r => r.name === choice.name);
+            const currentWeight = savedRestaurant?.weight || 1;
+
             const weightInput = document.createElement("input");
             weightInput.type = "number";
             weightInput.min = "0";
             weightInput.step = "1";
-            weightInput.value = (currentWeights[choice.name] || 1).toString();
+            weightInput.value = currentWeight.toString();
             weightInput.className = "weight-input";
             weightInput.dataset.restaurantName = choice.name;
 
@@ -1206,26 +1220,24 @@ class RandomChooserMap {
         this.editWeightsDialog.showModal();
     }
 
+
     private saveWeightsFromDialog() {
         if (!this.editWeightsDialog) return;
 
         const weightInputs = this.editWeightsDialog.querySelectorAll(".weight-input") as NodeListOf<HTMLInputElement>;
-        const newWeights: { [key: string]: number } = {};
-
-        weightInputs.forEach(input => {
-            const restaurantName = input.dataset.restaurantName;
-            const weight = parseInt(input.value) || 1;
-            if (restaurantName) {
-                newWeights[restaurantName] = weight;
-            }
+        const settings = this.loadSettings();
+        
+        const updatedRestaurants = settings.restaurants.map(restaurant => {
+            const input = Array.from(weightInputs).find(inp => inp.dataset.restaurantName === restaurant.name);
+            const weight = input ? (parseInt(input.value) || 1) : (restaurant.weight || 1);
+            return { ...restaurant, weight };
         });
 
-        this.updateSettings({ weights: newWeights });
-        
-        // Update the displayed weights in the controls
+        this.updateSettings({ restaurants: updatedRestaurants });
         this.addRandomChoiceControls();
         this.addInteractions();
     }
+
 
     private createActionChoiceDialog() {
         this.actionChoiceDialog = document.createElement("dialog");
@@ -1280,6 +1292,7 @@ class RandomChooserMap {
         });
     }
 
+
     private addMapClickHandler() {
         this.map?.on("click", (e: Leaflet.LeafletMouseEvent) => {
             const { lat, lng } = e.latlng;
@@ -1298,8 +1311,6 @@ class RandomChooserMap {
             this.actionChoiceDialog?.showModal();
         });
     }
-
-
 
 
     private openAddRestaurantDialogAtLocation() {
@@ -1324,6 +1335,7 @@ class RandomChooserMap {
         this.addRestaurantDialog.showModal();
     }
 
+
     private moveOriginToLocation() {
         if (!this.tempMarker) return;
 
@@ -1343,14 +1355,12 @@ class RandomChooserMap {
     }
 
 
-
     private exportData() {
         try {
             const settings = this.loadSettings();
 
             const exportObject = {
                 restaurants: settings.restaurants || [],
-                weights: settings.weights || {},
                 originPosition: settings.originPosition || null,
                 exportDate: new Date().toISOString(),
                 version: "1.0"
@@ -1375,6 +1385,7 @@ class RandomChooserMap {
             alert("Error during export");
         }
     }
+
 
     private importData() {
         try {
@@ -1401,9 +1412,6 @@ class RandomChooserMap {
                         
                         if (importedData.restaurants) {
                             newSettings.restaurants = importedData.restaurants;
-                        }
-                        if (importedData.weights) {
-                            newSettings.weights = importedData.weights;
                         }
                         if (importedData.originPosition) {
                             newSettings.originPosition = importedData.originPosition;
@@ -1440,6 +1448,7 @@ class RandomChooserMap {
         }
     }
 
+
     private validateImportData(data: any): boolean {
         if (!data || typeof data !== 'object') return false;
 
@@ -1460,6 +1469,7 @@ class RandomChooserMap {
         return true;
     }
 
+
     private reloadWithImportedData() {
         for (const marker of this.markerCache.values()) {
             if (this.map) {
@@ -1476,6 +1486,7 @@ class RandomChooserMap {
         this.addInteractions();
     }
 
+
     private loadSettings(): AppSettings {
         try {
             const saved = localStorage.getItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
@@ -1489,10 +1500,10 @@ class RandomChooserMap {
         
         return {
             restaurants: [],
-            weights: {},
             version: "1.0"
         };
     }
+
 
     private saveSettings(settings: AppSettings) {
         try {
@@ -1502,25 +1513,28 @@ class RandomChooserMap {
         }
     }
 
+
     private updateSettings(updates: Partial<AppSettings>) {
         const currentSettings = this.loadSettings();
         const newSettings = { ...currentSettings, ...updates };
         this.saveSettings(newSettings);
     }
 
+
     private areWeightsEnabled(): boolean {
         const settings = this.loadSettings();
-        return settings.weightsEnabled !== false; // Par défaut activé
+        return settings.weightsEnabled !== false;
     }
+
 
     private toggleWeights() {
         const currentState = this.areWeightsEnabled();
         this.updateSettings({ weightsEnabled: !currentState });
         
-        // Rafraîchir l'affichage des contrôles
         this.addRandomChoiceControls();
         this.addInteractions();
     }
+
 
     private loadOriginPosition(): Location | null {
         const settings = this.loadSettings();
@@ -1529,6 +1543,7 @@ class RandomChooserMap {
         }
         return null;
     }
+
 
     private saveOriginPosition() {
         if (this.currentOriginPosition) {
@@ -1541,5 +1556,8 @@ class RandomChooserMap {
         }
     }
 }
+
+
+
 
 export default RandomChooserMap;
