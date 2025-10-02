@@ -35,5 +35,12 @@
     "importData": "📥 Import data",
     "exportSuccess": "Data exported successfully!",
     "importSuccess": "Data imported successfully!",
-    "importError": "Import error: invalid file"
+    "importError": "Import error: invalid file",
+    "formLocationCoordinates": "Coordinates:",
+    "formLocationCoordinatesPlaceholder": "Ex: 43.609935, 3.885456 or 43°36'35.8\"N 3°53'07.6\"E",
+    "coordinatesInvalidFormat": "Invalid coordinates format. Use DD format (43.609935, 3.885456) or DMS format (43°36'35.8\"N 3°53'07.6\"E)",
+    "editWeights": "⚖️ Edit weights",
+    "editWeightsTitle": "Edit restaurant weights",
+    "editWeightsSave": "Save",
+    "editWeightsCancel": "Cancel"
 }

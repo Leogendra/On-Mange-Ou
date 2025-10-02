@@ -75,6 +75,13 @@ type RandomChooserMapOptions = {
         exportSuccess?: string;
         importSuccess?: string;
         importError?: string;
+        formLocationCoordinates?: string;
+        formLocationCoordinatesPlaceholder?: string;
+        coordinatesInvalidFormat?: string;
+        editWeights?: string;
+        editWeightsTitle?: string;
+        editWeightsSave?: string;
+        editWeightsCancel?: string;
     };
 };
 
@@ -97,9 +104,10 @@ class RandomChooserMap {
 
     private lockRoll: boolean = false;
     private alreadyRolled: boolean = false;
-    private isSelectingLocationInDialog: boolean = false;
+
     private tempMarker: Leaflet.Marker | null = null;
     private addRestaurantDialog: HTMLDialogElement | null = null;
+    private editWeightsDialog: HTMLDialogElement | null = null;
     private hiddenRestaurants: Set<RandomChoice> = new Set();
     private originMarker: Leaflet.Marker | null = null;
     private actionChoiceDialog: HTMLDialogElement | null = null;
@@ -171,6 +179,7 @@ class RandomChooserMap {
         this.addRandomChoiceControls();
         this.addInteractions();
         this.createAddRestaurantDialog();
+        this.createEditWeightsDialog();
         this.createActionChoiceDialog();
         this.addMapClickHandler();
     }
@@ -284,8 +293,18 @@ class RandomChooserMap {
             document.body.removeChild(menu);
         });
 
+        const editWeightsOption = document.createElement("button");
+        editWeightsOption.textContent = this.options.text?.editWeights ?? "⚖️ Edit weights";
+        editWeightsOption.className = "reset-menu-item";
+        editWeightsOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.showEditWeightsDialog();
+            document.body.removeChild(menu);
+        });
+
         menu.appendChild(exportDataOption);
         menu.appendChild(importDataOption);
+        menu.appendChild(editWeightsOption);
         menu.appendChild(resetWeightsOption);
         menu.appendChild(resetRestaurantsOption);
 
@@ -417,8 +436,6 @@ class RandomChooserMap {
             this.controlCache.set(choice, item);
         }
 
-        // const addRestaurantCard = this.addAddRestaurantCard();
-        // container.appendChild(addRestaurantCard);
         this.addControl(container, "topright");
     }
 
@@ -510,14 +527,12 @@ class RandomChooserMap {
         const settings = this.loadSettings();
         let weights: { [key: string]: number } = { ...settings.weights };
 
-        // Initialiser les poids manquants
         for (const item of items) {
             if (weights[item.name] === undefined) {
                 weights[item.name] = 1;
             }
         }
 
-        // Mettre à jour les poids
         for (const [name, weight] of Object.entries(weights)) {
             if (decrement.name === name) { 
                 weights[name] = 0; 
@@ -526,7 +541,7 @@ class RandomChooserMap {
             }
         }
 
-        // Sauvegarder les nouveaux poids
+
         this.updateSettings({ weights });
     }
 
@@ -550,7 +565,7 @@ class RandomChooserMap {
 
             this.choices = [...this.defaultChoices];
 
-            // Réinitialiser seulement les restaurants dans les settings
+
             this.updateSettings({ restaurants: [] });
 
             this.addRandomChoiceMarkers();
@@ -663,8 +678,8 @@ class RandomChooserMap {
         locationGroup.className = "form-group";
         
         const locationLabel = document.createElement("label");
-        locationLabel.textContent = this.options.text?.formRestaurantLocation ?? "Location:";
-        
+        locationLabel.textContent = this.options.text?.formLocationCoordinates ?? "Coordinates:";
+
         const locationInfo = document.createElement("p");
         locationInfo.id = "location-info";
         locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
@@ -677,7 +692,7 @@ class RandomChooserMap {
         locationInfo.style.transition = "all 0.3s ease";
 
         locationInfo.addEventListener("click", () => {
-            this.startLocationSelectionInDialog();
+            this.setupLocationInput();
         });
 
         const latInput = document.createElement("input");
@@ -722,6 +737,99 @@ class RandomChooserMap {
 
         document.body.appendChild(this.addRestaurantDialog);
         this.setupDialogEvents();
+    }
+
+    private setupLocationInput() {
+        if (!this.addRestaurantDialog) return;
+
+        const locationInfo = this.addRestaurantDialog.querySelector("#location-info") as HTMLElement;
+        const locationGroup = locationInfo?.parentNode as HTMLElement;
+        
+        if (!locationInfo || !locationGroup) return;
+
+
+        const coordinatesInput = document.createElement("input");
+        coordinatesInput.type = "text";
+        coordinatesInput.id = "restaurant-coordinates";
+        coordinatesInput.name = "restaurant-coordinates";
+        coordinatesInput.placeholder = this.options.text?.formLocationCoordinatesPlaceholder ?? "Ex: 43.609935, 3.885456 or 43°36'35.8\"N 3°53'07.6\"E";
+        coordinatesInput.required = false;
+        
+
+        coordinatesInput.style.padding = "0.8rem";
+        coordinatesInput.style.border = "2px solid #ddd";
+        coordinatesInput.style.borderRadius = "0.5rem";
+        coordinatesInput.style.width = "100%";
+        coordinatesInput.style.boxSizing = "border-box";
+        coordinatesInput.style.fontSize = "1rem";
+        coordinatesInput.style.transition = "all 0.3s ease";
+
+
+        locationGroup.replaceChild(coordinatesInput, locationInfo);
+
+
+        coordinatesInput.focus();
+
+
+        coordinatesInput.addEventListener("input", () => {
+            const isValid = this.validateAndSetCoordinates(coordinatesInput.value);
+            
+            if (isValid) {
+                coordinatesInput.style.borderColor = "#28a745";
+                coordinatesInput.style.backgroundColor = "#f8fff9";
+            } else if (coordinatesInput.value.trim() === "") {
+                coordinatesInput.style.borderColor = "#ddd";
+                coordinatesInput.style.backgroundColor = "#fff";
+            } else {
+                coordinatesInput.style.borderColor = "#dc3545";
+                coordinatesInput.style.backgroundColor = "#fff5f5";
+            }
+        });
+
+
+        coordinatesInput.addEventListener("blur", () => {
+            const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
+            const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
+            
+            if (!latInput?.value || !lngInput?.value) {
+
+                const newLocationInfo = document.createElement("p");
+                newLocationInfo.id = "location-info";
+                newLocationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
+                newLocationInfo.style.cursor = "pointer";
+                newLocationInfo.style.padding = "0.8rem";
+                newLocationInfo.style.backgroundColor = "#f8f9fa";
+                newLocationInfo.style.border = "2px dashed #ddd";
+                newLocationInfo.style.borderRadius = "0.5rem";
+                newLocationInfo.style.textAlign = "center";
+                newLocationInfo.style.transition = "all 0.3s ease";
+
+                newLocationInfo.addEventListener("click", () => {
+                    this.setupLocationInput();
+                });
+
+                locationGroup.replaceChild(newLocationInfo, coordinatesInput);
+            } 
+            else {
+                const confirmLocationInfo = document.createElement("p");
+                confirmLocationInfo.id = "location-info";
+                confirmLocationInfo.textContent = `${latInput.value}, ${lngInput.value}`;
+                confirmLocationInfo.style.cursor = "pointer";
+                confirmLocationInfo.style.padding = "0.8rem";
+                confirmLocationInfo.style.backgroundColor = "#f8fff9";
+                confirmLocationInfo.style.border = "2px solid #28a745";
+                confirmLocationInfo.style.borderRadius = "0.5rem";
+                confirmLocationInfo.style.textAlign = "center";
+                confirmLocationInfo.style.transition = "all 0.3s ease";
+                confirmLocationInfo.style.color = "#28a745";
+
+                confirmLocationInfo.addEventListener("click", () => {
+                    this.setupLocationInput();
+                });
+
+                locationGroup.replaceChild(confirmLocationInfo, coordinatesInput);
+            }
+        });
     }
 
     private setupDialogEvents() {
@@ -779,8 +887,6 @@ class RandomChooserMap {
     }
 
     private cancelLocationSelection() {
-        this.isSelectingLocationInDialog = false;
-
         if (this.tempMarker) {
             this.map?.removeLayer(this.tempMarker);
             this.tempMarker = null;
@@ -797,12 +903,70 @@ class RandomChooserMap {
             lngInput?.value !== "";
     }
 
+    private validateAndSetCoordinates(coordinatesStr: string): boolean {
+        if (!coordinatesStr.trim() || !this.addRestaurantDialog) {
+            return false;
+        }
+
+        const cleanStr = coordinatesStr.trim();
+        
+        const ddRegex = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
+        const ddMatch = cleanStr.match(ddRegex);
+        
+        if (ddMatch) {
+            const lat = parseFloat(ddMatch[1]);
+            const lng = parseFloat(ddMatch[2]);
+            
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                const latInput = this.addRestaurantDialog.querySelector("#restaurant-lat") as HTMLInputElement;
+                const lngInput = this.addRestaurantDialog.querySelector("#restaurant-lng") as HTMLInputElement;
+                if (latInput && lngInput) {
+                    latInput.value = lat.toString();
+                    lngInput.value = lng.toString();
+                    return true;
+                }
+            }
+        }
+        
+        const dmsRegex = /(\d+)°(\d+)'([\d.]+)"([NS])\s+(\d+)°(\d+)'([\d.]+)"([EW])/;
+        const dmsMatch = cleanStr.match(dmsRegex);
+        
+        if (dmsMatch) {
+            const latDeg = parseInt(dmsMatch[1]);
+            const latMin = parseInt(dmsMatch[2]);
+            const latSec = parseFloat(dmsMatch[3]);
+            const latDir = dmsMatch[4];
+            
+            const lngDeg = parseInt(dmsMatch[5]);
+            const lngMin = parseInt(dmsMatch[6]);
+            const lngSec = parseFloat(dmsMatch[7]);
+            const lngDir = dmsMatch[8];
+            
+            let lat = latDeg + latMin / 60 + latSec / 3600;
+            let lng = lngDeg + lngMin / 60 + lngSec / 3600;
+            
+            if (latDir === 'S') lat = -lat;
+            if (lngDir === 'W') lng = -lng;
+            
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                const latInput = this.addRestaurantDialog.querySelector("#restaurant-lat") as HTMLInputElement;
+                const lngInput = this.addRestaurantDialog.querySelector("#restaurant-lng") as HTMLInputElement;
+                if (latInput && lngInput) {
+                    latInput.value = lat.toString();
+                    lngInput.value = lng.toString();
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
     private resetForm() {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
         const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
         const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
         const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
-        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
         const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
 
         if (nameInput) nameInput.value = "";
@@ -810,13 +974,42 @@ class RandomChooserMap {
         if (latInput) latInput.value = "";
         if (lngInput) lngInput.value = "";
         if (confirmBtn) confirmBtn.disabled = true;
-        if (locationInfo) {
-            locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
-            locationInfo.style.color = "";
-            locationInfo.style.borderColor = "#ddd";
+
+        const currentLocationElement = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
+        const coordinatesInput = this.addRestaurantDialog?.querySelector("#restaurant-coordinates") as HTMLInputElement;
+
+        let actualLocationGroup: HTMLElement | null = null;
+        const formGroups = this.addRestaurantDialog?.querySelectorAll(".form-group");
+        if (formGroups) {
+            for (const group of formGroups) {
+                const label = group.querySelector("label");
+                if (label && label.textContent?.includes(this.options.text?.formLocationCoordinates ?? "Coordinates")) {
+                    actualLocationGroup = group as HTMLElement;
+                    break;
+                }
+            }
         }
 
-        this.isSelectingLocationInDialog = false;
+        if (actualLocationGroup && (coordinatesInput || currentLocationElement)) {
+            const elementToReplace = coordinatesInput || currentLocationElement;
+            
+            const locationInfo = document.createElement("p");
+            locationInfo.id = "location-info";
+            locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
+            locationInfo.style.cursor = "pointer";
+            locationInfo.style.padding = "0.8rem";
+            locationInfo.style.backgroundColor = "#f8f9fa";
+            locationInfo.style.border = "2px dashed #ddd";
+            locationInfo.style.borderRadius = "0.5rem";
+            locationInfo.style.textAlign = "center";
+            locationInfo.style.transition = "all 0.3s ease";
+
+            locationInfo.addEventListener("click", () => {
+                this.setupLocationInput();
+            });
+
+            actualLocationGroup.replaceChild(locationInfo, elementToReplace);
+        }
     }
 
     private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
@@ -876,6 +1069,118 @@ class RandomChooserMap {
         this.updateSettings({ restaurants: restaurantsData });
     }
 
+    private createEditWeightsDialog() {
+        this.editWeightsDialog = document.createElement("dialog");
+        this.editWeightsDialog.id = "edit-weights-dialog";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = this.options.text?.editWeightsTitle ?? "Edit restaurant weights";
+
+        const weightsContainer = document.createElement("div");
+        weightsContainer.className = "weights-container";
+
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "dialog-buttons";
+        
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.id = "cancel-edit-weights";
+        cancelBtn.textContent = this.options.text?.editWeightsCancel ?? "Cancel";
+        
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "submit";
+        saveBtn.id = "save-edit-weights";
+        saveBtn.textContent = this.options.text?.editWeightsSave ?? "Save";
+
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(saveBtn);
+
+        form.appendChild(title);
+        form.appendChild(weightsContainer);
+        form.appendChild(buttonsDiv);
+
+        this.editWeightsDialog.appendChild(form);
+        document.body.appendChild(this.editWeightsDialog);
+
+        // Event listeners
+        cancelBtn.addEventListener("click", () => {
+            this.editWeightsDialog?.close();
+        });
+
+        this.editWeightsDialog.addEventListener("click", (e) => {
+            if (e.target === this.editWeightsDialog) {
+                this.editWeightsDialog?.close();
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveWeightsFromDialog();
+            this.editWeightsDialog?.close();
+        });
+    }
+
+    private showEditWeightsDialog() {
+        if (!this.editWeightsDialog) return;
+
+        const weightsContainer = this.editWeightsDialog.querySelector(".weights-container") as HTMLElement;
+        if (!weightsContainer) return;
+
+        // Clear existing content
+        weightsContainer.innerHTML = "";
+
+        const settings = this.loadSettings();
+        const currentWeights = settings.weights || {};
+
+        // Create weight inputs for each restaurant
+        this.choices.forEach(choice => {
+            const weightRow = document.createElement("div");
+            weightRow.className = "weight-row";
+
+            const nameLabel = document.createElement("label");
+            nameLabel.textContent = choice.name;
+            nameLabel.className = "weight-label";
+
+            const weightInput = document.createElement("input");
+            weightInput.type = "number";
+            weightInput.min = "0";
+            weightInput.step = "1";
+            weightInput.value = (currentWeights[choice.name] || 1).toString();
+            weightInput.className = "weight-input";
+            weightInput.dataset.restaurantName = choice.name;
+
+            weightRow.appendChild(nameLabel);
+            weightRow.appendChild(weightInput);
+            weightsContainer.appendChild(weightRow);
+        });
+
+        this.editWeightsDialog.showModal();
+    }
+
+    private saveWeightsFromDialog() {
+        if (!this.editWeightsDialog) return;
+
+        const weightInputs = this.editWeightsDialog.querySelectorAll(".weight-input") as NodeListOf<HTMLInputElement>;
+        const newWeights: { [key: string]: number } = {};
+
+        weightInputs.forEach(input => {
+            const restaurantName = input.dataset.restaurantName;
+            const weight = parseInt(input.value) || 1;
+            if (restaurantName) {
+                newWeights[restaurantName] = weight;
+            }
+        });
+
+        this.updateSettings({ weights: newWeights });
+        
+        // Update the displayed weights in the controls
+        this.addRandomChoiceControls();
+        this.addInteractions();
+    }
+
     private createActionChoiceDialog() {
         this.actionChoiceDialog = document.createElement("dialog");
         this.actionChoiceDialog.id = "action-choice-dialog";
@@ -931,11 +1236,6 @@ class RandomChooserMap {
 
     private addMapClickHandler() {
         this.map?.on("click", (e: Leaflet.LeafletMouseEvent) => {
-            if (this.isSelectingLocationInDialog) {
-                this.onMapClickForLocationInDialog(e);
-                return;
-            }
-
             const { lat, lng } = e.latlng;
             if (this.tempMarker) {
                 this.map?.removeLayer(this.tempMarker);
@@ -953,49 +1253,8 @@ class RandomChooserMap {
         });
     }
 
-    private startLocationSelectionInDialog() {
-        this.isSelectingLocationInDialog = true;
-        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
-        if (locationInfo) {
-            locationInfo.textContent = this.options.text?.formLocationEditMode ?? "Click on the map to choose the location";
-            locationInfo.style.color = "#007bff";
-            locationInfo.style.borderColor = "#007bff";
-        }
-    }
 
-    private onMapClickForLocationInDialog(e: Leaflet.LeafletMouseEvent) {
-        if (!this.isSelectingLocationInDialog) return;
 
-        const { lat, lng } = e.latlng;
-
-        if (this.tempMarker) {
-            this.map?.removeLayer(this.tempMarker);
-        }
-
-        this.tempMarker = Leaflet.marker([lat, lng], {
-            icon: Leaflet.icon({
-                iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
-                iconSize: [32, 32],
-                popupAnchor: [0, -16]
-            })
-        }).addTo(this.map!);
-
-        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
-        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
-        const locationInfo = this.addRestaurantDialog?.querySelector("#location-info") as HTMLElement;
-
-        if (latInput) latInput.value = lat.toString();
-        if (lngInput) lngInput.value = lng.toString();
-        if (locationInfo) {
-            const selectedText = this.options.text?.formRestaurantLocationSelected ?? "Selected position: ";
-            locationInfo.textContent = `${selectedText}${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            locationInfo.style.color = "#28a745";
-            locationInfo.style.borderColor = "#28a745";
-        }
-
-        this.isSelectingLocationInDialog = false;
-        this.validateFormAfterLocationSelection();
-    }
 
     private openAddRestaurantDialogAtLocation() {
         if (!this.tempMarker || !this.addRestaurantDialog) return;
@@ -1013,9 +1272,9 @@ class RandomChooserMap {
             locationInfo.textContent = `${selectedText}${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
             locationInfo.style.color = "#28a745";
             locationInfo.style.borderColor = "#28a745";
+            locationInfo.style.backgroundColor = "#f8fff9";
         }
 
-        this.validateFormAfterLocationSelection();
         this.addRestaurantDialog.showModal();
     }
 
@@ -1037,23 +1296,10 @@ class RandomChooserMap {
         this.tempMarker = null;
     }
 
-    private validateFormAfterLocationSelection() {
-        const confirmBtn = this.addRestaurantDialog?.querySelector("#confirm-add") as HTMLButtonElement;
-        const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
-        const latInput = this.addRestaurantDialog?.querySelector("#restaurant-lat") as HTMLInputElement;
-        const lngInput = this.addRestaurantDialog?.querySelector("#restaurant-lng") as HTMLInputElement;
 
-        if (confirmBtn && nameInput && latInput && lngInput) {
-            const isValid = nameInput.value.trim() !== "" &&
-                latInput.value !== "" &&
-                lngInput.value !== "";
-            confirmBtn.disabled = !isValid;
-        }
-    }
 
     private exportData() {
         try {
-            // Récupérer toutes les données depuis les settings unifié
             const settings = this.loadSettings();
 
             const exportObject = {
@@ -1105,7 +1351,6 @@ class RandomChooserMap {
                             return;
                         }
 
-                        // Sauvegarder les nouvelles données dans les settings unifiés
                         const newSettings: Partial<AppSettings> = {};
                         
                         if (importedData.restaurants) {
@@ -1117,7 +1362,6 @@ class RandomChooserMap {
                         if (importedData.originPosition) {
                             newSettings.originPosition = importedData.originPosition;
                             
-                            // Mettre à jour la position actuelle et déplacer le marqueur
                             this.currentOriginPosition = Leaflet.latLng(importedData.originPosition.lat, importedData.originPosition.lng);
                             if (this.originMarker) {
                                 this.originMarker.setLatLng(this.currentOriginPosition);
@@ -1125,10 +1369,8 @@ class RandomChooserMap {
                             }
                         }
 
-                        // Appliquer tous les changements en une fois
                         this.updateSettings(newSettings);
 
-                        // Recharger l'application avec les nouvelles données
                         this.reloadWithImportedData();
 
                         alert(this.options.text?.importSuccess ?? "Data imported successfully!");
@@ -1199,7 +1441,6 @@ class RandomChooserMap {
             localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
         }
         
-        // Retourner les settings par défaut
         return {
             restaurants: [],
             weights: {},

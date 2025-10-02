@@ -10,7 +10,7 @@
     "noVisibleRestaurant": "Aucun restaurant visible pour la sélection ! Veuillez rendre au moins un restaurant visible.",
     "formAddRestaurant": "Ajouter un restaurant",
     "formRestaurantName": "Nom du restaurant:",
-    "formRestaurantAddress": "Adresse:",
+    "formRestaurantAddress": "Adresse (facultatif):",
     "formRestaurantLocation": "Localisation:",
     "formRestaurantLocationInfo": "Cliquez sur la carte pour sélectionner la position",
     "formRestaurantLocationSelected": "Position sélectionnée: ",
@@ -25,8 +25,8 @@
     "resetRestaurantsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les restaurants aux valeurs par défaut ? Cela supprimera tous les restaurants ajoutés.",
     "resetWeightsConfirmation": "Êtes-vous sûr de vouloir réinitialiser tous les poids des restaurants à 1 ?",
     "mapClickChoiceTitle": "Que voulez-vous faire ?",
-    "mapClickAddRestaurant": "Ajouter un restaurant",
-    "mapClickMoveOrigin": "Déplacer le point de départ",
+    "mapClickAddRestaurant": "🍟 Ajouter un restaurant",
+    "mapClickMoveOrigin": "🧍 Déplacer le point de départ",
     "mapClickCancel": "Annuler",
     "formLocationClickToEdit": "Cliquez ici pour sélectionner sur la carte",
     "formLocationEditMode": "Cliquez sur la carte pour choisir la localisation",
@@ -35,5 +35,12 @@
     "importData": "📥 Importer les données",
     "exportSuccess": "Données exportées avec succès !",
     "importSuccess": "Données importées avec succès !",
-    "importError": "Erreur lors de l'importation : fichier invalide"
+    "importError": "Erreur lors de l'importation : fichier invalide",
+    "formLocationCoordinates": "Coordonnées:",
+    "formLocationCoordinatesPlaceholder": "Ex: 43.609935, 3.885456 ou 43°36'35.8\"N 3°53'07.6\"E",
+    "coordinatesInvalidFormat": "Format de coordonnées invalide. Utilisez le format DD (43.609935, 3.885456) ou DMS (43°36'35.8\"N 3°53'07.6\"E)",
+    "editWeights": "⚖️ Modifier les poids",
+    "editWeightsTitle": "Modifier les poids des restaurants",
+    "editWeightsSave": "Sauvegarder",
+    "editWeightsCancel": "Annuler"
 }
