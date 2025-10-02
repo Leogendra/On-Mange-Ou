@@ -52,17 +52,17 @@ You can customize parameters like initial position or default restaurants by edi
 -   [x] Add full random restaurant selection
 -   [x] Add weighting of selection probability based on frequency
 -   [x] Update the restaurant list from a file (JSON, CSV, etc.)
--   [ ] Improve UI/UX
+-   [x] Improve UI/UX for mobile
 -   [ ] Add restaurant details (prices, food type like pizza, sushi, etc.)
 -   [ ] Add restaurant filtering (by price, food type, etc.)
 -   [x] Add option to hide restaurants before selection
 -   [x] Add option to add restaurants before selection
--   [ ] Add option to add restaurants on the map
--   [ ] Add option to import/export restaurant list
--   [ ] Add toggle for weighted/random selection
+-   [x] Add option to add restaurants on the map
+-   [x] Add option to import/export restaurant list
+-   [x] Add toggle for weighted/random selection
 -   [x] Display weights on the restaurant list
 -   [x] Add option to reset weights
--   [ ] Add option to manually set weights
+-   [x] Add option to manually set weights
 
 ## 👏 Thanks
 
