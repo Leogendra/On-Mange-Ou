@@ -45,5 +45,7 @@
     "editWeightsCancel": "Annuler",
     "toggleWeights": "⚖️ Activer/Désactiver les poids",
     "weightsEnabled": "Poids : Activés",
-    "weightsDisabled": "Poids : Désactivés"
+    "weightsDisabled": "Poids : Désactivés",
+    "exportUrl": "🔗 Exporter via URL",
+    "urlExportSuccess": "URL générée avec succès ! Copiée dans le presse-papier."
 }

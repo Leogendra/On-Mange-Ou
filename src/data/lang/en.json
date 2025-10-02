@@ -45,5 +45,7 @@
     "editWeightsCancel": "Cancel",
     "toggleWeights": "⚖️ Enable/Disable weights",
     "weightsEnabled": "Weights: Enabled",
-    "weightsDisabled": "Weights: Disabled"
+    "weightsDisabled": "Weights: Disabled",
+    "exportUrl": "🔗 Export via URL",
+    "urlExportSuccess": "URL generated successfully! Copied to clipboard."
 }
