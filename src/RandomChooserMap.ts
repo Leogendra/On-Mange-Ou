@@ -8,6 +8,23 @@ export interface RandomChoice {
     location: Location;
 }
 
+interface AppSettings {
+    restaurants: Array<{
+        name: string;
+        address: string;
+        location: {
+            lat: number;
+            long: number;
+        };
+    }>;
+    weights: { [key: string]: number };
+    originPosition?: {
+        lat: number;
+        lng: number;
+    };
+    version: string;
+}
+
 type RandomChoices = Array<RandomChoice>;
 
 type RandomChooserMapOptions = {
@@ -68,8 +85,7 @@ function wait(timeout: number): Promise<void> {
 }
 
 class RandomChooserMap {
-    private static readonly WEIGHTS_STORAGE_KEY = "weights";
-    private static readonly RESTAURANTS_STORAGE_KEY = "custom-restaurants";
+    private static readonly SETTINGS_STORAGE_KEY = "settings";
 
     private choices: RandomChoices;
     private defaultChoices: RandomChoices;
@@ -87,6 +103,7 @@ class RandomChooserMap {
     private hiddenRestaurants: Set<RandomChoice> = new Set();
     private originMarker: Leaflet.Marker | null = null;
     private actionChoiceDialog: HTMLDialogElement | null = null;
+    private currentOriginPosition: Leaflet.LatLng | null = null;
 
     public constructor(
         defaultChoices: RandomChoices,
@@ -160,9 +177,11 @@ class RandomChooserMap {
 
     private initOrigin() {
         if (this.options.view !== undefined) {
-            const origin = this.options.view.origin ?? Location.at(0, 0);
+            const savedOriginPosition = this.loadOriginPosition();
+            const origin = savedOriginPosition || this.options.view.origin || Location.at(0, 0);
 
             this.map!.setView(origin.toTuple(), this.options.view.zoom);
+            this.currentOriginPosition = Leaflet.latLng(origin.lat, origin.lon);
 
             if (this.options.style?.originMarker !== undefined) {
                 this.originMarker = this.addMarker(origin, this.options.style.originMarker);
@@ -226,7 +245,6 @@ class RandomChooserMap {
     }
 
     private showSettingsMenu(button: HTMLElement) {
-        // Créer le menu contextuel
         const menu = document.createElement("div");
         menu.className = "reset-menu";
 
@@ -271,21 +289,17 @@ class RandomChooserMap {
         menu.appendChild(resetWeightsOption);
         menu.appendChild(resetRestaurantsOption);
 
-        // Positionner le menu
         const rect = button.getBoundingClientRect();
         menu.style.position = "fixed";
         menu.style.left = rect.right + "px";
         menu.style.bottom = (window.innerHeight - rect.top) + "px";
 
-        // Ajouter au DOM
         document.body.appendChild(menu);
 
-        // Empêcher la propagation des clics sur le menu
         menu.addEventListener("click", (e) => {
             e.stopPropagation();
         });
 
-        // Fermer le menu si on clique ailleurs
         const closeMenu = (e: MouseEvent) => {
             if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
                 document.body.removeChild(menu);
@@ -470,9 +484,7 @@ class RandomChooserMap {
         items: Set<RandomChoice>
     ): WeightedSet<RandomChoice> {
         const weights: WeightedSet<RandomChoice> = new Set();
-        const rawWeights = localStorage.getItem(
-            RandomChooserMap.WEIGHTS_STORAGE_KEY
-        );
+        const settings = this.loadSettings();
 
         for (const item of items) {
             weights.add({
@@ -481,12 +493,8 @@ class RandomChooserMap {
             });
         }
 
-        if (rawWeights !== null) {
-            const savedWeights = JSON.parse(rawWeights) as {
-                [key: string]: number;
-            };
-
-            for (const [name, weight] of Object.entries(savedWeights)) {
+        if (settings.weights) {
+            for (const [name, weight] of Object.entries(settings.weights)) {
                 for (const item of weights) {
                     if (item.value.name === name) {
                         item.weight = weight;
@@ -499,48 +507,33 @@ class RandomChooserMap {
     }
 
     private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
-        const rawWeights = localStorage.getItem(
-            RandomChooserMap.WEIGHTS_STORAGE_KEY
-        );
-        let weights: {
-            [key: string]: number;
-        } = {};
+        const settings = this.loadSettings();
+        let weights: { [key: string]: number } = { ...settings.weights };
 
-        if (rawWeights !== null) {
-            const savedWeights: {
-                [key: string]: number | undefined;
-            } = JSON.parse(rawWeights);
-
-            for (const item of items) {
-                if (savedWeights[item.name] === undefined) {
-                    weights[item.name] = 1;
-                }
-                else {
-                    weights[item.name] = savedWeights[item.name]!;
-                }
-            }
-        }
-        else {
-            for (const item of items) {
+        // Initialiser les poids manquants
+        for (const item of items) {
+            if (weights[item.name] === undefined) {
                 weights[item.name] = 1;
             }
         }
 
+        // Mettre à jour les poids
         for (const [name, weight] of Object.entries(weights)) {
-            if (decrement.name === name) { weights[name] = 0; }
-            else { weights[name] = weight + 1; }
+            if (decrement.name === name) { 
+                weights[name] = 0; 
+            } else { 
+                weights[name] = weight + 1; 
+            }
         }
 
-        localStorage.setItem(
-            RandomChooserMap.WEIGHTS_STORAGE_KEY,
-            JSON.stringify(weights)
-        );
+        // Sauvegarder les nouveaux poids
+        this.updateSettings({ weights });
     }
 
     private resetWeights() {
         const confirmMessage = this.options.text?.resetWeightsConfirmation ?? "Are you sure you want to reset all restaurant weights?";
         if (confirm(confirmMessage)) {
-            localStorage.removeItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+            this.updateSettings({ weights: {} });
         }
     }
 
@@ -557,7 +550,8 @@ class RandomChooserMap {
 
             this.choices = [...this.defaultChoices];
 
-            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+            // Réinitialiser seulement les restaurants dans les settings
+            this.updateSettings({ restaurants: [] });
 
             this.addRandomChoiceMarkers();
             this.addRandomChoiceControls();
@@ -850,18 +844,16 @@ class RandomChooserMap {
 
     private loadRestaurantsFromStorage(defaultChoices: RandomChoices): RandomChoices {
         try {
-            const saved = localStorage.getItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
-            if (saved) {
-                const restaurantsData = JSON.parse(saved);
-                return restaurantsData.map((r: any) => ({
+            const settings = this.loadSettings();
+            if (settings.restaurants && settings.restaurants.length > 0) {
+                return settings.restaurants.map((r: any) => ({
                     name: r.name,
                     description: r.address,
                     location: Location.at(r.location.lat, r.location.long)
                 }));
             }
         } catch (error) {
-            console.warn(`Error while loading restaurants from localStorage: ${error}`);
-            localStorage.removeItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
+            console.warn(`Error while loading restaurants from settings: ${error}`);
         }
 
         this.saveRestaurantsToStorageInternal(defaultChoices);
@@ -881,7 +873,7 @@ class RandomChooserMap {
                 long: choice.location.lon
             }
         }));
-        localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(restaurantsData));
+        this.updateSettings({ restaurants: restaurantsData });
     }
 
     private createActionChoiceDialog() {
@@ -1036,6 +1028,9 @@ class RandomChooserMap {
             this.originMarker.setLatLng(position);
         }
         
+        this.currentOriginPosition = position;
+        this.saveOriginPosition();
+        
         this.map?.setView(position, this.map.getZoom());
         
         this.map?.removeLayer(this.tempMarker);
@@ -1058,35 +1053,29 @@ class RandomChooserMap {
 
     private exportData() {
         try {
-            // Récupérer toutes les données du localStorage
-            const restaurantsData = localStorage.getItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY);
-            const weightsData = localStorage.getItem(RandomChooserMap.WEIGHTS_STORAGE_KEY);
+            // Récupérer toutes les données depuis les settings unifié
+            const settings = this.loadSettings();
 
             const exportObject = {
-                restaurants: restaurantsData ? JSON.parse(restaurantsData) : [],
-                weights: weightsData ? JSON.parse(weightsData) : {},
+                restaurants: settings.restaurants || [],
+                weights: settings.weights || {},
+                originPosition: settings.originPosition || null,
                 exportDate: new Date().toISOString(),
                 version: "1.0"
             };
 
-            // Créer le fichier JSON
             const dataStr = JSON.stringify(exportObject, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
-            // Créer le lien de téléchargement
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `restaurants-data-${new Date().toISOString().split('T')[0]}.json`;
 
-            // Déclencher le téléchargement
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            // Nettoyer l'URL
             URL.revokeObjectURL(link.href);
 
-            // Afficher un message de succès
             alert(this.options.text?.exportSuccess ?? "Data exported successfully!");
 
         } catch (error) {
@@ -1097,7 +1086,6 @@ class RandomChooserMap {
 
     private importData() {
         try {
-            // Créer un input file temporaire
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.json';
@@ -1112,19 +1100,33 @@ class RandomChooserMap {
                     try {
                         const importedData = JSON.parse(e.target?.result as string);
 
-                        // Valider la structure des données
                         if (!this.validateImportData(importedData)) {
                             alert(this.options.text?.importError ?? "Import error: invalid file");
                             return;
                         }
 
-                        // Sauvegarder les nouvelles données
+                        // Sauvegarder les nouvelles données dans les settings unifiés
+                        const newSettings: Partial<AppSettings> = {};
+                        
                         if (importedData.restaurants) {
-                            localStorage.setItem(RandomChooserMap.RESTAURANTS_STORAGE_KEY, JSON.stringify(importedData.restaurants));
+                            newSettings.restaurants = importedData.restaurants;
                         }
                         if (importedData.weights) {
-                            localStorage.setItem(RandomChooserMap.WEIGHTS_STORAGE_KEY, JSON.stringify(importedData.weights));
+                            newSettings.weights = importedData.weights;
                         }
+                        if (importedData.originPosition) {
+                            newSettings.originPosition = importedData.originPosition;
+                            
+                            // Mettre à jour la position actuelle et déplacer le marqueur
+                            this.currentOriginPosition = Leaflet.latLng(importedData.originPosition.lat, importedData.originPosition.lng);
+                            if (this.originMarker) {
+                                this.originMarker.setLatLng(this.currentOriginPosition);
+                                this.map?.setView(this.currentOriginPosition, this.map.getZoom());
+                            }
+                        }
+
+                        // Appliquer tous les changements en une fois
+                        this.updateSettings(newSettings);
 
                         // Recharger l'application avec les nouvelles données
                         this.reloadWithImportedData();
@@ -1140,7 +1142,6 @@ class RandomChooserMap {
                 reader.readAsText(file);
             });
 
-            // Déclencher la sélection de fichier
             document.body.appendChild(fileInput);
             fileInput.click();
             document.body.removeChild(fileInput);
@@ -1152,10 +1153,8 @@ class RandomChooserMap {
     }
 
     private validateImportData(data: any): boolean {
-        // Vérifier la structure de base
         if (!data || typeof data !== 'object') return false;
 
-        // Vérifier les restaurants
         if (data.restaurants && Array.isArray(data.restaurants)) {
             for (const restaurant of data.restaurants) {
                 if (!restaurant.name || !restaurant.location || 
@@ -1166,7 +1165,6 @@ class RandomChooserMap {
             }
         }
 
-        // Vérifier les poids
         if (data.weights && typeof data.weights !== 'object') {
             return false;
         }
@@ -1175,7 +1173,6 @@ class RandomChooserMap {
     }
 
     private reloadWithImportedData() {
-        // Nettoyer les marqueurs existants
         for (const marker of this.markerCache.values()) {
             if (this.map) {
                 this.map.removeLayer(marker);
@@ -1184,13 +1181,63 @@ class RandomChooserMap {
         this.markerCache.clear();
         this.controlCache.clear();
 
-        // Recharger les restaurants depuis le localStorage
         this.choices = this.loadRestaurantsFromStorage(this.defaultChoices);
 
-        // Recréer les marqueurs et contrôles
         this.addRandomChoiceMarkers();
         this.addRandomChoiceControls();
         this.addInteractions();
+    }
+
+    private loadSettings(): AppSettings {
+        try {
+            const saved = localStorage.getItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (error) {
+            console.warn(`Error loading settings from localStorage: ${error}`);
+            localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+        }
+        
+        // Retourner les settings par défaut
+        return {
+            restaurants: [],
+            weights: {},
+            version: "1.0"
+        };
+    }
+
+    private saveSettings(settings: AppSettings) {
+        try {
+            localStorage.setItem(RandomChooserMap.SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        } catch (error) {
+            console.error(`Error saving settings to localStorage: ${error}`);
+        }
+    }
+
+    private updateSettings(updates: Partial<AppSettings>) {
+        const currentSettings = this.loadSettings();
+        const newSettings = { ...currentSettings, ...updates };
+        this.saveSettings(newSettings);
+    }
+
+    private loadOriginPosition(): Location | null {
+        const settings = this.loadSettings();
+        if (settings.originPosition) {
+            return Location.at(settings.originPosition.lat, settings.originPosition.lng);
+        }
+        return null;
+    }
+
+    private saveOriginPosition() {
+        if (this.currentOriginPosition) {
+            this.updateSettings({
+                originPosition: {
+                    lat: this.currentOriginPosition.lat,
+                    lng: this.currentOriginPosition.lng
+                }
+            });
+        }
     }
 }
 

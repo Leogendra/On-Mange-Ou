@@ -126,7 +126,6 @@ body {
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid black;
         box-sizing: border-box;
         font-size: 1.3rem;
         font-weight: bold;
@@ -459,7 +458,6 @@ body {
     border-top: 1px solid #eee;
 }
 
-/* Action Choice Dialog */
 #action-choice-dialog {
     width: fit-content;
     min-width: 300px;
@@ -482,7 +480,6 @@ body {
 
     h2 {
         margin: 0 0 1rem 0;
-        /* color: var(--accent-color); */
         font-size: 1.3rem;
         text-align: center;
     }
@@ -516,28 +513,23 @@ body {
     color: white;
 }
 
-/* Media Queries pour Mobile */
 @media (max-width: 768px) {
-    /* Réduction de la taille des polices */
     :root {
         font-size: 14px;
     }
 
-    /* Bouton principal "On mange où" plus petit */
     #random-chooser-map-control-roll {
         padding: 0.8rem 1.5rem;
         font-size: 1.4rem;
         border-radius: 2rem;
     }
 
-    /* Liste des choix plus compacte */
     #random-chooser-map-control-choices {
         height: calc(100vh - 8rem);
         gap: 0.3rem;
         padding: 0.3rem 0;
     }
 
-    /* Cartes de restaurants plus petites */
     .random-chooser-map-control-choice {
         padding: 0.4rem 0.6rem;
         min-width: 160px;
@@ -555,7 +547,6 @@ body {
         line-height: 1.1;
     }
 
-    /* Boutons d'action plus petits */
     .random-chooser-map-control-choice-hide,
     .random-chooser-map-control-choice-delete {
         width: 1.2rem;
@@ -564,20 +555,17 @@ body {
         font-size: 0.8rem;
     }
 
-    /* Bouton ajouter plus petit */
     #random-chooser-map-control-add {
         width: 2.5rem;
         height: 2.5rem;
         font-size: 1.2rem;
     }
 
-    /* Actions toujours visibles sur mobile */
     .random-chooser-map-control-choice .random-chooser-map-control-choice-actions {
         opacity: 1;
         transform: scale(1);
     }
 
-    /* Dialog responsive */
     #add-restaurant-dialog {
         min-width: 280px;
         width: 90vw;
@@ -618,7 +606,6 @@ body {
         margin: 0.3rem 0 0 0;
     }
 
-    /* Boutons add et reset plus visibles */
     .random-chooser-map-control-choice.add,
     .random-chooser-map-control-choice.reset {
         font-size: 1.1rem;
@@ -626,7 +613,6 @@ body {
         margin: 0.1rem 0;
     }
 
-    /* Menu reset responsive */
     .reset-menu {
         min-width: 180px;
         font-size: 0.85rem;
@@ -637,7 +623,6 @@ body {
         font-size: 0.8rem;
     }
 
-    /* Action Choice Dialog responsive */
     #action-choice-dialog {
         min-width: 280px;
         width: 90vw;
@@ -659,7 +644,6 @@ body {
 }
 
 @media (max-width: 480px) {
-    /* Pour très petits écrans */
     :root {
         font-size: 12px;
     }
@@ -712,7 +696,6 @@ body {
         padding: 0.4rem 0.5rem;
     }
 
-    /* Action Choice Dialog très petits écrans */
     #action-choice-dialog {
         width: 95vw;
         min-width: 260px;
@@ -725,7 +708,6 @@ body {
 }
 
 @media (max-width: 320px) {
-    /* Pour écrans très étroits */
     .random-chooser-map-control-choice {
         min-width: 120px;
         padding: 0.25rem 0.4rem;
@@ -749,7 +731,6 @@ body {
         width: 100%;
     }
 
-    /* Action Choice Dialog écrans très étroits */
     #action-choice-dialog {
         width: 98vw;
         min-width: 240px;
