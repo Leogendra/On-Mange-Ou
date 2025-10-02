@@ -22,6 +22,29 @@ pnpm run build
 pnpm run preview
 ```
 
+## Customization
+
+You can customize parameters like initial position or default restaurants by editing the `src/data/config.json` file. The format is as follows :
+
+```json
+{
+    "initialLat": 43.459399,
+    "initialLng": 3.861694,
+    "initialZoom": 16,
+    "language": "en",
+    "defaultRestaurants": [
+        {
+            "name": "Restaurant Name",
+            "address": "123 Main St (optional)",
+            "lat": 48.8566,
+            "lng": 2.3522,
+            "weight": 1
+        },
+        ...
+    ]
+}
+```
+
 ## 🛣️ Roadmap
 
 -   [x] Setup interactive map
@@ -29,17 +52,18 @@ pnpm run preview
 -   [x] Add full random restaurant selection
 -   [x] Add weighting of selection probability based on frequency
 -   [x] Update the restaurant list from a file (JSON, CSV, etc.)
--   [ ] Improve UI/UX
+-   [x] Improve UI/UX for mobile
 -   [ ] Add restaurant details (prices, food type like pizza, sushi, etc.)
 -   [ ] Add restaurant filtering (by price, food type, etc.)
--   [ ] Add option to hide restaurants before selection
--   [ ] Add option to add restaurants before selection
--   [ ] Add option to add restaurants on the map
--   [ ] Add option to import/export restaurant list
--   [ ] Add toggle for weighted/random selection
--   [ ] Display weights on the restaurant list
+-   [x] Add option to hide restaurants before selection
+-   [x] Add option to add restaurants before selection
+-   [x] Add option to add restaurants on the map
+-   [x] Add option to import/export restaurant list
+-   [x] Add toggle for weighted/random selection
+-   [x] Display weights on the restaurant list
 -   [x] Add option to reset weights
--   [ ] Add option to manually set weights
+-   [x] Add option to manually set weights
+-   [x] Export/import restaurant list via URL
 
 ## 👏 Thanks
 
