@@ -63,6 +63,7 @@ You can customize parameters like initial position or default restaurants by edi
 -   [x] Display weights on the restaurant list
 -   [x] Add option to reset weights
 -   [x] Add option to manually set weights
+-   [x] Export/import restaurant list via URL
 
 ## 👏 Thanks
 
