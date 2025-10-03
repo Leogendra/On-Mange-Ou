@@ -189,9 +189,9 @@ class RandomChooserMap {
             this.updateWeight(choicesSet, randomChoice);
         }
 
-        await wait(1000);
+        await wait(this.alreadyRolled ? 500 : 1000);
         if (addButton !== null) { addButton.style.display = "flex"; }
-
+        
         this.lockRoll = false;
 
         if (this.alreadyRolled) { return; } // Let labels closed
@@ -413,10 +413,11 @@ class RandomChooserMap {
 
 
     private addRandomChoiceControls() {
-        const existing = document.getElementById("random-chooser-map-control-choices");
+        const existing = document.getElementById("div-random-chooser-map-control");
         if (existing !== null) { existing.remove(); }
 
         const divRestaurantContainer = document.createElement("div");
+        divRestaurantContainer.id = "div-random-chooser-map-control";
         divRestaurantContainer.classList.add("div-restaurant-container");
 
         const collapseButton = document.createElement("button");
@@ -654,8 +655,6 @@ class RandomChooserMap {
             this.controlCache.clear();
 
             this.choices = [...this.defaultChoices];
-
-
             this.updateSettings({ restaurants: [] });
 
             this.addRandomChoiceMarkers();
@@ -1161,7 +1160,7 @@ class RandomChooserMap {
             if (settings.restaurants && settings.restaurants.length > 0) {
                 return settings.restaurants.map((r: any) => ({
                     name: r.name,
-                    description: r.address,
+                    description: r.address || "",
                     location: Location.at(r.location.lat, r.location.long)
                 }));
             }
@@ -1458,40 +1457,33 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
 
-            // Create optimized URL parameters with shortest possible names
             const params = new URLSearchParams();
             
-            // r = restaurants
             if (settings.restaurants && settings.restaurants.length > 0) {
                 const restaurantsData = settings.restaurants.map(r => ({
-                    n: r.name,                    // n = name
-                    a: r.address,                // a = address  
-                    lt: r.location.lat,          // lt = latitude
-                    lg: r.location.long,         // lg = longitude
-                    ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {}) // w = weight (only if not default)
+                    n: r.name,
+                    a: r.address,
+                    lt: r.location.lat,
+                    lg: r.location.long,
+                    ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {})
                 }));
                 params.set('r', JSON.stringify(restaurantsData));
             }
 
-            // o = origin position
             if (settings.originPosition) {
                 params.set('o', `${settings.originPosition.lat},${settings.originPosition.lng}`);
             }
 
-            // we = weights enabled
             if (settings.weightsEnabled !== undefined) {
                 params.set('we', settings.weightsEnabled ? '1' : '0');
             }
 
-            // Generate URL
             const baseUrl = window.location.origin + window.location.pathname;
             const url = `${baseUrl}?${params.toString()}`;
 
-            // Copy to clipboard
             navigator.clipboard.writeText(url).then(() => {
                 alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
             }).catch(() => {
-                // Fallback if clipboard API fails
                 const textArea = document.createElement('textarea');
                 textArea.value = url;
                 document.body.appendChild(textArea);
@@ -1511,27 +1503,24 @@ class RandomChooserMap {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             
-            if (urlParams.size === 0) {
-                return; // No parameters to parse
-            }
+            if (urlParams.size === 0) {}
 
             const settings = this.loadSettings();
             let hasChanges = false;
 
-            // Parse restaurants (r parameter)
             const restaurantsParam = urlParams.get('r');
             if (restaurantsParam) {
                 try {
                     const restaurantsData = JSON.parse(restaurantsParam);
                     if (Array.isArray(restaurantsData)) {
                         settings.restaurants = restaurantsData.map(r => ({
-                            name: r.n,                    // n = name
-                            address: r.a,                // a = address
+                            name: r.n,
+                            address: r.a,
                             location: {
-                                lat: r.lt,               // lt = latitude
-                                long: r.lg               // lg = longitude
+                                lat: r.lt,
+                                long: r.lg
                             },
-                            weight: r.w !== undefined ? r.w : 1  // w = weight (default to 1)
+                            weight: r.w !== undefined ? r.w : 1
                         }));
                         hasChanges = true;
                     }
@@ -1540,7 +1529,6 @@ class RandomChooserMap {
                 }
             }
 
-            // Parse origin position (o parameter)
             const originParam = urlParams.get('o');
             if (originParam) {
                 const [lat, lng] = originParam.split(',').map(Number);
@@ -1550,7 +1538,6 @@ class RandomChooserMap {
                 }
             }
 
-            // Parse weights enabled (we parameter)
             const weightsEnabledParam = urlParams.get('we');
             if (weightsEnabledParam !== null) {
                 settings.weightsEnabled = weightsEnabledParam === '1';
