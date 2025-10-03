@@ -3,6 +3,7 @@
     "resetAction": "Reset",
     "resetWeights": "⚠️ Reset weights",
     "resetRestaurants": "⚠️ Reset restaurants",
+    "hintRestaurants": "Click on the map to add restaurants",
     "weightLabel": "Weight:",
     "weightDescription": "The higher the weight, the more likely the restaurant will be chosen.",
     "weightResetConfirmation": "Are you sure you want to reset all restaurant weights?",
@@ -47,5 +48,7 @@
     "weightsEnabled": "Weights: Enabled",
     "weightsDisabled": "Weights: Disabled",
     "exportUrl": "🔗 Export via URL",
-    "urlExportSuccess": "URL generated successfully! Copied to clipboard."
+    "urlExportSuccess": "URL generated successfully! Copied to clipboard.",
+    "collapseRestaurants": "Collapse restaurants",
+    "expandRestaurants": "Expand restaurants"
 }
