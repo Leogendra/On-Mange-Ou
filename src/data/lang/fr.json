@@ -3,6 +3,7 @@
     "resetAction": "Réinitialiser",
     "resetWeights": "⚠️ Réinitialiser les poids",
     "resetRestaurants": "⚠️ Réinitialiser les restaurants",
+    "hintRestaurants": "Cliquez sur la carte pour ajouter un restaurant",
     "weightLabel": "Poids :",
     "weightDescription": "Plus le poids est élevé, plus le restaurant a de chances d'être choisi.",
     "weightResetConfirmation": "Êtes-vous sûr de vouloir réinitialiser les poids de tous les restaurants ?",
