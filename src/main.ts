@@ -15,7 +15,8 @@ async function init() {
     new RandomChooserMap(RESTAURANTS, {
         view: {
             origin: Location.at(config.initialLat, config.initialLng),
-            zoom: config.initialZoom
+            zoom: config.initialZoom,
+            mapStyle: config.mapStyle
         },
         style: {
             originMarker: PERSON_ICON,

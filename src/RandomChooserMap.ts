@@ -38,6 +38,7 @@ type RandomChooserMapOptions = {
     view?: {
         origin?: Location;
         zoom?: number;
+        mapStyle?: string;
     };
     style?: {
         markerSize?: number;
@@ -239,7 +240,8 @@ class RandomChooserMap {
 
     private addTileSet() {
         Leaflet.tileLayer(
-            "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            this.options.view?.mapStyle || "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+
             {
                 attribution:
                     '&copy; <a href="https://openstreetmap.fr">OpenStreetMap France</a>',

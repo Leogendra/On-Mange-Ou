@@ -3,6 +3,8 @@
     "initialLng": 3.8794988393783574,
     "initialZoom": 16,
     "language": "fr",
+    "mapStyle": "https://tile.openstreetmap.bzh/ca/{z}/{x}/{y}.png",
+
     "defaultRestaurants": [
         {
             "name": "Grand Slam",

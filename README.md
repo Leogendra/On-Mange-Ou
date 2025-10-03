@@ -36,8 +36,10 @@ You can customize parameters like initial position or default restaurants by edi
         {
             "name": "Restaurant Name",
             "address": "123 Main St (optional)",
-            "lat": 48.8566,
-            "lng": 2.3522,
+            "location": {
+                "lat": 48.8566,
+                "long": 2.3522
+            },
             "weight": 1
         },
         ...
@@ -45,26 +47,22 @@ You can customize parameters like initial position or default restaurants by edi
 }
 ```
 
-## 🛣️ Roadmap
+## 🛣️ Features roadmap
 
 -   [x] Setup interactive map
 -   [x] Add restaurant list
 -   [x] Add full random restaurant selection
 -   [x] Add weighting of selection probability based on frequency
--   [x] Update the restaurant list from a file (JSON, CSV, etc.)
--   [x] Improve UI/UX for mobile
--   [ ] Add restaurant details (prices, food type like pizza, sushi, etc.)
--   [ ] Add restaurant filtering (by price, food type, etc.)
--   [x] Add option to hide restaurants before selection
--   [x] Add option to add restaurants before selection
--   [x] Add option to add restaurants on the map
--   [x] Add option to import/export restaurant list
+-   [x] Update the restaurant list from a JSON file
+-   [x] Add restaurants by clicking on the map
+-   [x] Add option to hide restaurants before rolling
 -   [x] Add toggle for weighted/random selection
 -   [x] Display weights on the restaurant list
 -   [x] Add option to reset weights
 -   [x] Add option to manually set weights
 -   [x] Export/import restaurant list via URL
--   [ ] Collapse restaurant list
+-   [x] Improve UI/UX for mobile
+-   [x] Collapse restaurant list
 
 ## 👏 Thanks
 
