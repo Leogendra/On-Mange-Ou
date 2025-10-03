@@ -49,6 +49,7 @@ type RandomChooserMapOptions = {
         resetAction?: string;
         resetWeights?: string;
         resetRestaurants?: string;
+        hintRestaurants?: string
         weightDescription?: string;
         weightResetConfirmation?: string;
         noRestaurant?: string;
@@ -208,7 +209,7 @@ class RandomChooserMap {
         this.addTileSet();
         this.addRandomChoiceMarkers();
         this.addRollControl();
-        this.addResetControl();
+        this.addSettigsControl();
         this.addRandomChoiceControls();
         this.addInteractions();
         this.createAddRestaurantDialog();
@@ -277,10 +278,10 @@ class RandomChooserMap {
     }
 
 
-    private addResetControl() {
+    private addSettigsControl() {
         const button = document.createElement("button");
 
-        button.id = "random-chooser-map-control-reset";
+        button.id = "random-chooser-map-control-settings";
         button.innerText = this.options.text?.settingsAction ?? "Settings";
 
         button.addEventListener("click", (e) => {
@@ -395,20 +396,15 @@ class RandomChooserMap {
     }
 
 
-    private addResetRestaurantCard() {
+    private addHintRestaurantCard() {
         const buttonContainer = document.createElement("div");
-        buttonContainer.classList.add("random-chooser-map-control-choice", "reset");
+        buttonContainer.classList.add("hint");
 
         const buttonTitle = document.createElement("div");
         buttonTitle.classList.add("random-chooser-map-control-choice-title-container");
-        buttonTitle.innerText = this.options.text?.resetRestaurants ?? "Reset restaurants";
+        buttonTitle.innerText = this.options.text?.hintRestaurants ?? "Reset restaurants";
 
         buttonContainer.appendChild(buttonTitle);
-        buttonContainer.addEventListener("click", (e) => {
-            e.stopPropagation();
-            this.resetToDefaultRestaurants();
-        });
-
         return buttonContainer;
     }
 
@@ -417,14 +413,14 @@ class RandomChooserMap {
         const existing = document.getElementById("random-chooser-map-control-choices");
         if (existing !== null) { existing.remove(); }
 
-        const container = document.createElement("aside");
-        container.id = "random-chooser-map-control-choices";
-        container.addEventListener("wheel", (e) => e.stopImmediatePropagation());
-        container.addEventListener("scroll", (e) => e.stopImmediatePropagation());
+        const restaurantContainer = document.createElement("aside");
+        restaurantContainer.id = "random-chooser-map-control-choices";
+        restaurantContainer.addEventListener("wheel", (e) => e.stopImmediatePropagation());
+        restaurantContainer.addEventListener("scroll", (e) => e.stopImmediatePropagation());
 
         if (this.choices.length < 1) {
-            const resetRestaurantCard = this.addResetRestaurantCard()
-            container.appendChild(resetRestaurantCard);
+            const resetRestaurantCard = this.addHintRestaurantCard()
+            restaurantContainer.appendChild(resetRestaurantCard);
         }
 
         for (const choice of this.choices) {
@@ -483,12 +479,12 @@ class RandomChooserMap {
             item.appendChild(descriptionElement);
             item.appendChild(weightElement);
 
-            container.appendChild(item);
+            restaurantContainer.appendChild(item);
 
             this.controlCache.set(choice, item);
         }
 
-        this.addControl(container, "topright");
+        this.addControl(restaurantContainer, "topright");
     }
 
 
@@ -528,12 +524,31 @@ class RandomChooserMap {
     private addControl(
         element: HTMLElement,
         position: Leaflet.ControlPosition
-    ): Leaflet.Control {
-        const ExtendedControl = Leaflet.Control.extend({
-            onAdd: (_: any) => element
-        });
-        const control = new ExtendedControl({ position }).addTo(this.map!);
-        return control;
+    ): void {
+        element.style.position = 'fixed';
+        element.style.zIndex = '1000';
+        element.style.pointerEvents = 'auto';
+
+        switch(position) {
+            case 'topright':
+                element.style.top = '0.5rem';
+                element.style.right = '0.5rem';
+                break;
+            case 'topleft':
+                element.style.top = '0.5rem';
+                element.style.left = '0.5rem';
+                break;
+            case 'bottomright':
+                element.style.bottom = '0.2rem';
+                element.style.right = '0.5rem';
+                break;
+            case 'bottomleft':
+                element.style.bottom = '0.2rem';
+                element.style.left = '0.5rem';
+                break;
+        }
+
+        document.body.appendChild(element);
     }
 
 
