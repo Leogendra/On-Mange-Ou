@@ -95,6 +95,8 @@ type RandomChooserMapOptions = {
         weightsDisabled?: string;
         exportUrl?: string;
         urlExportSuccess?: string;
+        collapseRestaurants?: string;
+        expandRestaurants?: string;
     };
 };
 
@@ -127,6 +129,7 @@ class RandomChooserMap {
     private originMarker: Leaflet.Marker | null = null;
     private actionChoiceDialog: HTMLDialogElement | null = null;
     private currentOriginPosition: Leaflet.LatLng | null = null;
+    private restaurantsCollapsed: boolean = false;
 
     public constructor(
         defaultChoices: RandomChoices,
@@ -413,10 +416,27 @@ class RandomChooserMap {
         const existing = document.getElementById("random-chooser-map-control-choices");
         if (existing !== null) { existing.remove(); }
 
+        const divRestaurantContainer = document.createElement("div");
+        divRestaurantContainer.classList.add("div-restaurant-container");
+
+        const collapseButton = document.createElement("button");
+        collapseButton.id = "collapse-restaurants-btn";
+        collapseButton.innerHTML = this.restaurantsCollapsed ? "⬅" : "➡";
+        collapseButton.title = this.restaurantsCollapsed 
+            ? (this.options.text?.expandRestaurants ?? "Expand restaurants")
+            : (this.options.text?.collapseRestaurants ?? "Collapse restaurants");
+        collapseButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.toggleRestaurantsCollapse();
+        });
+
         const restaurantContainer = document.createElement("aside");
         restaurantContainer.id = "random-chooser-map-control-choices";
         restaurantContainer.addEventListener("wheel", (e) => e.stopImmediatePropagation());
         restaurantContainer.addEventListener("scroll", (e) => e.stopImmediatePropagation());
+
+        divRestaurantContainer.appendChild(collapseButton);
+        divRestaurantContainer.appendChild(restaurantContainer);
 
         if (this.choices.length < 1) {
             const resetRestaurantCard = this.addHintRestaurantCard()
@@ -480,11 +500,10 @@ class RandomChooserMap {
             item.appendChild(weightElement);
 
             restaurantContainer.appendChild(item);
-
             this.controlCache.set(choice, item);
         }
 
-        this.addControl(restaurantContainer, "topright");
+        this.addControl(divRestaurantContainer, "topright");
     }
 
 
@@ -705,6 +724,25 @@ class RandomChooserMap {
         }
     }
 
+    private toggleRestaurantsCollapse() {
+        this.restaurantsCollapsed = !this.restaurantsCollapsed;
+        
+        const container = document.getElementById("random-chooser-map-control-choices");
+        const collapseButton = document.getElementById("collapse-restaurants-btn");
+        
+        if (container && collapseButton) {
+            if (this.restaurantsCollapsed) {
+                container.classList.add("collapsed");
+                collapseButton.innerHTML = "⬅";
+                collapseButton.title = this.options.text?.expandRestaurants ?? "Expand restaurants";
+            } 
+            else {
+                container.classList.remove("collapsed");
+                collapseButton.innerHTML = "➡";
+                collapseButton.title = this.options.text?.collapseRestaurants ?? "Collapse restaurants";
+            }
+        }
+    }
 
     private createAddRestaurantDialog() {
         this.addRestaurantDialog = document.createElement("dialog");
