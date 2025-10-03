@@ -7,15 +7,18 @@ import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 export interface RandomChoice {
     name: string;
-    description: string;
-    location: Location;
+    address?: string;
+    location: {
+        lat: number;
+        long: number;
+    };
 }
 
 
 interface AppSettings {
     restaurants: Array<{
         name: string;
-        address: string;
+        address?: string;
         location: {
             lat: number;
             long: number;
@@ -256,7 +259,7 @@ class RandomChooserMap {
         if (this.options.style?.randomMarker !== undefined) {
             for (const choice of this.choices) {
                 const marker = this.addMarker(
-                    choice.location,
+                    Location.at(choice.location.lat, choice.location.long),
                     this.options.style.randomMarker,
                     choice.name
                 );
@@ -485,12 +488,12 @@ class RandomChooserMap {
             titleContainer.appendChild(actionsContainer);
             item.appendChild(titleContainer);
 
-            if (choice.description) {
-                const descriptionElement = document.createElement("h3");
-                descriptionElement.classList.add("random-chooser-map-control-choice-description");
-                descriptionElement.classList.add("random-chooser-map-control-choice-closable");
-                descriptionElement.innerText = choice.description;
-                item.appendChild(descriptionElement);
+            if (choice.address) {
+                const addressElement = document.createElement("h3");
+                addressElement.classList.add("random-chooser-map-control-choice-description");
+                addressElement.classList.add("random-chooser-map-control-choice-closable");
+                addressElement.innerText = choice.address;
+                item.appendChild(addressElement);
             }
 
             const weightElement = document.createElement("h3");
@@ -1137,15 +1140,15 @@ class RandomChooserMap {
     private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
         const newRestaurant: RandomChoice = {
             name: name,
-            description: address,
-            location: Location.at(lat, lng)
+            address: address,
+            location: { lat: lat, long: lng }
         };
 
         this.choices.push(newRestaurant);
 
         if (this.options.style?.randomMarker) {
             const marker = this.addMarker(
-                newRestaurant.location,
+                Location.at(newRestaurant.location.lat, newRestaurant.location.long),
                 this.options.style.randomMarker,
                 newRestaurant.name
             );
@@ -1165,7 +1168,7 @@ class RandomChooserMap {
                 return settings.restaurants.map((r: any) => ({
                     name: r.name,
                     description: r.address || "",
-                    location: Location.at(r.location.lat, r.location.long)
+                    location: { lat: r.location.lat, long: r.location.long }
                 }));
             }
         } catch (error) {
@@ -1188,10 +1191,10 @@ class RandomChooserMap {
             const existingRestaurant = settings.restaurants.find(r => r.name === choice.name);
             return {
                 name: choice.name,
-                address: choice.description,
+                address: choice.address || "",
                 location: {
                     lat: choice.location.lat,
-                    long: choice.location.lon
+                    long: choice.location.long
                 },
                 weight: existingRestaurant?.weight || 1
             };
