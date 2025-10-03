@@ -447,24 +447,12 @@ class RandomChooserMap {
         for (const choice of this.choices) {
             const weight = this.recoverSavedWeights(new Set([choice])).values().next().value?.weight;
 
+            const item = document.createElement("div");
+            item.classList.add("random-chooser-map-control-choice");
+
             const titleElement = document.createElement("h2");
             titleElement.classList.add("random-chooser-map-control-choice-title");
             titleElement.innerText = choice.name;
-
-            const descriptionElement = document.createElement("h3");
-            descriptionElement.classList.add("random-chooser-map-control-choice-description");
-            descriptionElement.classList.add("random-chooser-map-control-choice-closable");
-            descriptionElement.innerText = choice.description;
-
-            const weightElement = document.createElement("h3");
-            weightElement.classList.add("random-chooser-map-control-choice-weight");
-            weightElement.classList.add("random-chooser-map-control-choice-closable");
-            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
-
-            const weightsEnabled = this.areWeightsEnabled();
-            if (!weightsEnabled) {
-                weightElement.style.display = "none";
-            }
 
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
@@ -493,12 +481,26 @@ class RandomChooserMap {
             titleContainer.classList.add("random-chooser-map-control-choice-title-container");
             titleContainer.appendChild(titleElement);
             titleContainer.appendChild(actionsContainer);
-
-            const item = document.createElement("div");
-            item.classList.add("random-chooser-map-control-choice");
             item.appendChild(titleContainer);
-            item.appendChild(descriptionElement);
+
+            if (choice.description) {
+                const descriptionElement = document.createElement("h3");
+                descriptionElement.classList.add("random-chooser-map-control-choice-description");
+                descriptionElement.classList.add("random-chooser-map-control-choice-closable");
+                descriptionElement.innerText = choice.description;
+                item.appendChild(descriptionElement);
+            }
+
+            const weightElement = document.createElement("h3");
+            weightElement.classList.add("random-chooser-map-control-choice-weight");
+            weightElement.classList.add("random-chooser-map-control-choice-closable");
+            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
             item.appendChild(weightElement);
+
+            const weightsEnabled = this.areWeightsEnabled();
+            if (!weightsEnabled) {
+                weightElement.style.display = "none";
+            }
 
             restaurantContainer.appendChild(item);
             this.controlCache.set(choice, item);
@@ -1515,7 +1517,7 @@ class RandomChooserMap {
                     if (Array.isArray(restaurantsData)) {
                         settings.restaurants = restaurantsData.map(r => ({
                             name: r.n,
-                            address: r.a,
+                            address: r.a || "",
                             location: {
                                 lat: r.lt,
                                 long: r.lg
