@@ -48,5 +48,7 @@
     "weightsEnabled": "Poids : Activés",
     "weightsDisabled": "Poids : Désactivés",
     "exportUrl": "🔗 Exporter via URL",
-    "urlExportSuccess": "URL générée avec succès ! Copiée dans le presse-papier."
+    "urlExportSuccess": "URL générée avec succès ! Copiée dans le presse-papier.",
+    "collapseRestaurants": "Réduire les restaurants",
+    "expandRestaurants": "Développer les restaurants"
 }

@@ -48,5 +48,7 @@
     "weightsEnabled": "Weights: Enabled",
     "weightsDisabled": "Weights: Disabled",
     "exportUrl": "🔗 Export via URL",
-    "urlExportSuccess": "URL generated successfully! Copied to clipboard."
+    "urlExportSuccess": "URL generated successfully! Copied to clipboard.",
+    "collapseRestaurants": "Collapse restaurants",
+    "expandRestaurants": "Expand restaurants"
 }
