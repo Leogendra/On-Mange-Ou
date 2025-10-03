@@ -38,6 +38,7 @@ type RandomChooserMapOptions = {
     view?: {
         origin?: Location;
         zoom?: number;
+        mapStyle?: string;
     };
     style?: {
         markerSize?: number;
@@ -189,9 +190,9 @@ class RandomChooserMap {
             this.updateWeight(choicesSet, randomChoice);
         }
 
-        await wait(1000);
+        await wait(this.alreadyRolled ? 500 : 1000);
         if (addButton !== null) { addButton.style.display = "flex"; }
-
+        
         this.lockRoll = false;
 
         if (this.alreadyRolled) { return; } // Let labels closed
@@ -239,7 +240,8 @@ class RandomChooserMap {
 
     private addTileSet() {
         Leaflet.tileLayer(
-            "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            this.options.view?.mapStyle || "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+
             {
                 attribution:
                     '&copy; <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
@@ -413,10 +415,11 @@ class RandomChooserMap {
 
 
     private addRandomChoiceControls() {
-        const existing = document.getElementById("random-chooser-map-control-choices");
+        const existing = document.getElementById("div-random-chooser-map-control");
         if (existing !== null) { existing.remove(); }
 
         const divRestaurantContainer = document.createElement("div");
+        divRestaurantContainer.id = "div-random-chooser-map-control";
         divRestaurantContainer.classList.add("div-restaurant-container");
 
         const collapseButton = document.createElement("button");
@@ -446,24 +449,12 @@ class RandomChooserMap {
         for (const choice of this.choices) {
             const weight = this.recoverSavedWeights(new Set([choice])).values().next().value?.weight;
 
+            const item = document.createElement("div");
+            item.classList.add("random-chooser-map-control-choice");
+
             const titleElement = document.createElement("h2");
             titleElement.classList.add("random-chooser-map-control-choice-title");
             titleElement.innerText = choice.name;
-
-            const descriptionElement = document.createElement("h3");
-            descriptionElement.classList.add("random-chooser-map-control-choice-description");
-            descriptionElement.classList.add("random-chooser-map-control-choice-closable");
-            descriptionElement.innerText = choice.description;
-
-            const weightElement = document.createElement("h3");
-            weightElement.classList.add("random-chooser-map-control-choice-weight");
-            weightElement.classList.add("random-chooser-map-control-choice-closable");
-            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
-
-            const weightsEnabled = this.areWeightsEnabled();
-            if (!weightsEnabled) {
-                weightElement.style.display = "none";
-            }
 
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
@@ -492,12 +483,26 @@ class RandomChooserMap {
             titleContainer.classList.add("random-chooser-map-control-choice-title-container");
             titleContainer.appendChild(titleElement);
             titleContainer.appendChild(actionsContainer);
-
-            const item = document.createElement("div");
-            item.classList.add("random-chooser-map-control-choice");
             item.appendChild(titleContainer);
-            item.appendChild(descriptionElement);
+
+            if (choice.description) {
+                const descriptionElement = document.createElement("h3");
+                descriptionElement.classList.add("random-chooser-map-control-choice-description");
+                descriptionElement.classList.add("random-chooser-map-control-choice-closable");
+                descriptionElement.innerText = choice.description;
+                item.appendChild(descriptionElement);
+            }
+
+            const weightElement = document.createElement("h3");
+            weightElement.classList.add("random-chooser-map-control-choice-weight");
+            weightElement.classList.add("random-chooser-map-control-choice-closable");
+            weightElement.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${weight}`;
             item.appendChild(weightElement);
+
+            const weightsEnabled = this.areWeightsEnabled();
+            if (!weightsEnabled) {
+                weightElement.style.display = "none";
+            }
 
             restaurantContainer.appendChild(item);
             this.controlCache.set(choice, item);
@@ -654,8 +659,6 @@ class RandomChooserMap {
             this.controlCache.clear();
 
             this.choices = [...this.defaultChoices];
-
-
             this.updateSettings({ restaurants: [] });
 
             this.addRandomChoiceMarkers();
@@ -1161,7 +1164,7 @@ class RandomChooserMap {
             if (settings.restaurants && settings.restaurants.length > 0) {
                 return settings.restaurants.map((r: any) => ({
                     name: r.name,
-                    description: r.address,
+                    description: r.address || "",
                     location: Location.at(r.location.lat, r.location.long)
                 }));
             }
@@ -1458,40 +1461,33 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
 
-            // Create optimized URL parameters with shortest possible names
             const params = new URLSearchParams();
             
-            // r = restaurants
             if (settings.restaurants && settings.restaurants.length > 0) {
                 const restaurantsData = settings.restaurants.map(r => ({
-                    n: r.name,                    // n = name
-                    a: r.address,                // a = address  
-                    lt: r.location.lat,          // lt = latitude
-                    lg: r.location.long,         // lg = longitude
-                    ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {}) // w = weight (only if not default)
+                    n: r.name,
+                    a: r.address,
+                    lt: r.location.lat,
+                    lg: r.location.long,
+                    ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {})
                 }));
                 params.set('r', JSON.stringify(restaurantsData));
             }
 
-            // o = origin position
             if (settings.originPosition) {
                 params.set('o', `${settings.originPosition.lat},${settings.originPosition.lng}`);
             }
 
-            // we = weights enabled
             if (settings.weightsEnabled !== undefined) {
                 params.set('we', settings.weightsEnabled ? '1' : '0');
             }
 
-            // Generate URL
             const baseUrl = window.location.origin + window.location.pathname;
             const url = `${baseUrl}?${params.toString()}`;
 
-            // Copy to clipboard
             navigator.clipboard.writeText(url).then(() => {
                 alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
             }).catch(() => {
-                // Fallback if clipboard API fails
                 const textArea = document.createElement('textarea');
                 textArea.value = url;
                 document.body.appendChild(textArea);
@@ -1511,27 +1507,24 @@ class RandomChooserMap {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             
-            if (urlParams.size === 0) {
-                return; // No parameters to parse
-            }
+            if (urlParams.size === 0) {}
 
             const settings = this.loadSettings();
             let hasChanges = false;
 
-            // Parse restaurants (r parameter)
             const restaurantsParam = urlParams.get('r');
             if (restaurantsParam) {
                 try {
                     const restaurantsData = JSON.parse(restaurantsParam);
                     if (Array.isArray(restaurantsData)) {
                         settings.restaurants = restaurantsData.map(r => ({
-                            name: r.n,                    // n = name
-                            address: r.a,                // a = address
+                            name: r.n,
+                            address: r.a || "",
                             location: {
-                                lat: r.lt,               // lt = latitude
-                                long: r.lg               // lg = longitude
+                                lat: r.lt,
+                                long: r.lg
                             },
-                            weight: r.w !== undefined ? r.w : 1  // w = weight (default to 1)
+                            weight: r.w !== undefined ? r.w : 1
                         }));
                         hasChanges = true;
                     }
@@ -1540,7 +1533,6 @@ class RandomChooserMap {
                 }
             }
 
-            // Parse origin position (o parameter)
             const originParam = urlParams.get('o');
             if (originParam) {
                 const [lat, lng] = originParam.split(',').map(Number);
@@ -1550,7 +1542,6 @@ class RandomChooserMap {
                 }
             }
 
-            // Parse weights enabled (we parameter)
             const weightsEnabledParam = urlParams.get('we');
             if (weightsEnabledParam !== null) {
                 settings.weightsEnabled = weightsEnabledParam === '1';

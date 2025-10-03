@@ -1,21 +1,13 @@
 {
-    "initialLat": 43.608812,
-    "initialLng": 3.880062,
+    "initialLat": 43.6084734739584,
+    "initialLng": 3.8794988393783574,
     "initialZoom": 16,
     "language": "fr",
+    "mapStyle": "https://tile.openstreetmap.bzh/ca/{z}/{x}/{y}.png",
+
     "defaultRestaurants": [
         {
-            "name": "Giraya",
-            "address": "22 Pl. du Millénaire",
-            "location": {
-                "lat": 43.607848623402234,
-                "long": 3.8894554656255598
-            },
-            "weight": 1
-        },
-        {
             "name": "Grand Slam",
-            "address": "16 Rue Boussairolles",
             "location": {
                 "lat": 43.60768439445637,
                 "long": 3.8812468082320444
@@ -24,7 +16,6 @@
         },
         {
             "name": "Subway",
-            "address": "4 Rue de Verdun",
             "location": {
                 "lat": 43.60756628044681,
                 "long": 3.8802459617421103
@@ -33,7 +24,6 @@
         },
         {
             "name": "Thai to Box",
-            "address": "13 Rue de Verdun",
             "location": {
                 "lat": 43.60722883336906,
                 "long": 3.8807294299039223
@@ -41,38 +31,26 @@
             "weight": 1
         },
         {
-            "name": "Bistro Régent",
-            "address": "26 All. Jules Milhau",
+            "name": "Burger n' Co",
             "location": {
-                "lat": 43.60919396081588,
-                "long": 3.8819854087880383
+                "lat": 43.60803844047966,
+                "long": 3.8802887499332432
             },
             "weight": 1
         },
         {
-            "name": "Cuisine S",
-            "address": "All. Jules Milhau",
+            "name": "KFC",
             "location": {
-                "lat": 43.60877550101456,
-                "long": 3.882493898330213
+                "lat": 43.6293513807102,
+                "long": 3.8707508146762852
             },
             "weight": 1
         },
         {
-            "name": "Kuma-ï Sushi",
-            "address": "16 Rue Boussairolles",
+            "name": "Burger King",
             "location": {
-                "lat": 43.607645389549354,
-                "long": 3.881336059936078
-            },
-            "weight": 1
-        },
-        {
-            "name": "Burger n Co",
-            "address": "11 Pl. du Millénaire",
-            "location": {
-                "lat": 43.60830961926281,
-                "long": 3.8890656772043446
+                "lat": 43.648013414415274,
+                "long": 3.8417145609855656
             },
             "weight": 1
         }

@@ -6,6 +6,23 @@ It's developed in pure _HTML_/_CSS_/_Typescript_ using [**Vite**](https://vite.d
 
 The project is available live at at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
 
+## ✨ Features
+
+- Interactive map
+- Restaurant list
+- Full random restaurant selection
+- Weighting of selection probability based on frequency
+- Update the restaurant list from a JSON file
+- Add restaurants by clicking on the map
+- Add option to hide restaurants before rolling
+- Add toggle for weighted/random selection
+- Display weights on the restaurant list
+- Add option to reset weights
+- Add option to manually set weights
+- Export/import restaurant list via URL
+- Collapse restaurant list
+- UI for mobile
+
 ## 🛠️ Development
 
 The project can be run locally using **Vite** and its auto-update development server with the commands :
@@ -22,7 +39,7 @@ pnpm run build
 pnpm run preview
 ```
 
-## Customization
+## ⚙️ Customization
 
 You can customize parameters like initial position or default restaurants by editing the `src/data/config.json` file. The format is as follows :
 
@@ -32,40 +49,22 @@ You can customize parameters like initial position or default restaurants by edi
     "initialLng": 3.861694,
     "initialZoom": 16,
     "language": "en",
+    "mapStyle": "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
     "defaultRestaurants": [
         {
             "name": "Restaurant Name",
             "address": "123 Main St (optional)",
-            "lat": 48.8566,
-            "lng": 2.3522,
+            "location": {
+                "lat": 48.8566,
+                "long": 2.3522
+            },
             "weight": 1
         },
-        ...
     ]
 }
 ```
-
-## 🛣️ Roadmap
-
--   [x] Setup interactive map
--   [x] Add restaurant list
--   [x] Add full random restaurant selection
--   [x] Add weighting of selection probability based on frequency
--   [x] Update the restaurant list from a file (JSON, CSV, etc.)
--   [x] Improve UI/UX for mobile
--   [ ] Add restaurant details (prices, food type like pizza, sushi, etc.)
--   [ ] Add restaurant filtering (by price, food type, etc.)
--   [x] Add option to hide restaurants before selection
--   [x] Add option to add restaurants before selection
--   [x] Add option to add restaurants on the map
--   [x] Add option to import/export restaurant list
--   [x] Add toggle for weighted/random selection
--   [x] Display weights on the restaurant list
--   [x] Add option to reset weights
--   [x] Add option to manually set weights
--   [x] Export/import restaurant list via URL
--   [ ] Collapse restaurant list
+You can find tile providers at https://leaflet-extras.github.io/leaflet-providers/preview/
 
 ## 👏 Thanks
 
-Big thanks to [**Dimitri Prestat**](https://github.com/diprestat) for the original idea, and [**Louis Parent**](https://gitlab.com/loss2/webapp/omo) for the implementation.
+Big thanks to [**Dimitri Prestat**](https://github.com/diprestat) for the original idea, and [**Louis Parent**](https://gitlab.com/louis-parent) for the implementation.
