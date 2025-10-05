@@ -7,7 +7,7 @@ import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 export interface RandomChoice {
     name: string;
-    address?: string;
+    address: string;
     location: {
         lat: number;
         long: number;
@@ -18,7 +18,7 @@ export interface RandomChoice {
 interface AppSettings {
     restaurants: Array<{
         name: string;
-        address?: string;
+        address: string;
         location: {
             lat: number;
             long: number;
@@ -49,58 +49,60 @@ type RandomChooserMapOptions = {
         randomMarker?: string;
     };
     text?: {
-        rollAction?: string;
-        resetAction?: string;
-        resetWeights?: string;
-        resetRestaurants?: string;
+        rollAction: string;
+        resetAction: string;
+        resetWeights: string;
+        resetRestaurants: string;
         hintRestaurants?: string
-        weightDescription?: string;
-        weightResetConfirmation?: string;
-        noRestaurant?: string;
-        noVisibleRestaurant?: string;
-        formAddRestaurant?: string;
-        formRestaurantName?: string;
-        formRestaurantAddress?: string;
-        formRestaurantLocation?: string;
-        formRestaurantLocationInfo?: string;
-        formRestaurantLocationSelected?: string;
-        formRestaurantWeight?: string;
-        formAddButton?: string;
-        formCancelButton?: string;
-        addRestaurantTooltip?: string;
-        deleteRestaurantTooltip?: string;
-        hideRestaurantTooltip?: string;
-        showRestaurantTooltip?: string;
-        deleteRestaurantConfirmation?: string;
-        resetRestaurantsConfirmation?: string;
-        resetWeightsConfirmation?: string;
-        weightLabel?: string;
-        mapClickChoiceTitle?: string;
-        mapClickAddRestaurant?: string;
-        mapClickMoveOrigin?: string;
-        mapClickCancel?: string;
-        formLocationClickToEdit?: string;
-        formLocationEditMode?: string;
-        settingsAction?: string;
-        exportData?: string;
-        importData?: string;
-        exportSuccess?: string;
-        importSuccess?: string;
-        importError?: string;
-        formLocationCoordinates?: string;
-        formLocationCoordinatesPlaceholder?: string;
-        coordinatesInvalidFormat?: string;
-        editWeights?: string;
-        editWeightsTitle?: string;
-        editWeightsSave?: string;
-        editWeightsCancel?: string;
-        toggleWeights?: string;
-        weightsEnabled?: string;
-        weightsDisabled?: string;
-        exportUrl?: string;
-        urlExportSuccess?: string;
-        collapseRestaurants?: string;
-        expandRestaurants?: string;
+        weightDescription: string;
+        weightResetConfirmation: string;
+        noRestaurant: string;
+        noVisibleRestaurant: string;
+        formAddRestaurant: string;
+        formRestaurantName: string;
+        formRestaurantAddress: string;
+        formRestaurantLocation: string;
+        formRestaurantLocationInfo: string;
+        formRestaurantLocationSelected: string;
+        formRestaurantWeight: string;
+        formAddButton: string;
+        formCancelButton: string;
+        addRestaurantTooltip: string;
+        deleteRestaurantTooltip: string;
+        hideRestaurantTooltip: string;
+        showRestaurantTooltip: string;
+        deleteRestaurantConfirmation: string;
+        resetRestaurantsConfirmation: string;
+        resetWeightsConfirmation: string;
+        weightLabel: string;
+        mapClickChoiceTitle: string;
+        mapClickAddRestaurant: string;
+        mapClickMoveOrigin: string;
+        mapClickCancel: string;
+        formLocationClickToEdit: string;
+        formLocationEditMode: string;
+        settingsAction: string;
+        exportData: string;
+        importData: string;
+        exportSuccess: string;
+        importSuccess: string;
+        importError: string;
+        formLocationCoordinates: string;
+        formLocationCoordinatesPlaceholder: string;
+        coordinatesInvalidFormat: string;
+        editWeights: string;
+        editWeightsTitle: string;
+        editWeightsSave: string;
+        editWeightsCancel: string;
+        toggleWeights: string;
+        weightsEnabled: string;
+        weightsDisabled: string;
+        exportUrl: string;
+        urlExportSuccess: string;
+        collapseRestaurants: string;
+        expandRestaurants: string;
+        collapseText: string;
+        expandText: string;
     };
 };
 
@@ -247,7 +249,7 @@ class RandomChooserMap {
 
             {
                 attribution:
-                    '&copy; <a href="https://openstreetmap.fr">OpenStreetMap France</a>',
+                    "&copy; <a href='https://openstreetmap.fr'>OpenStreetMap France</a>",
                 minZoom: 1,
                 maxZoom: 20
             }
@@ -427,7 +429,7 @@ class RandomChooserMap {
 
         const collapseButton = document.createElement("button");
         collapseButton.id = "collapse-restaurants-btn";
-        collapseButton.innerHTML = this.restaurantsCollapsed ? "⬅" : "➡";
+        collapseButton.innerHTML = this.restaurantsCollapsed ? (this.options.text?.expandText ?? "Expand") : (this.options.text?.collapseText ?? "Collapse")
         collapseButton.title = this.restaurantsCollapsed 
             ? (this.options.text?.expandRestaurants ?? "Expand restaurants")
             : (this.options.text?.collapseRestaurants ?? "Collapse restaurants");
@@ -461,7 +463,7 @@ class RandomChooserMap {
 
             const deleteButton = document.createElement("button");
             deleteButton.classList.add("random-chooser-map-control-choice-delete");
-            deleteButton.innerHTML = "×";
+            deleteButton.innerHTML = "x";
             deleteButton.title = this.options.text?.deleteRestaurantTooltip ?? "Delete this restaurant";
             deleteButton.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -470,7 +472,7 @@ class RandomChooserMap {
 
             const hideButton = document.createElement("button");
             hideButton.classList.add("random-chooser-map-control-choice-hide");
-            hideButton.innerHTML = "−";
+            hideButton.innerHTML = "-";
             hideButton.title = this.options.text?.hideRestaurantTooltip ?? "Temporarily hide this restaurant";
             hideButton.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -552,26 +554,26 @@ class RandomChooserMap {
         element: HTMLElement,
         position: Leaflet.ControlPosition
     ): void {
-        element.style.position = 'fixed';
-        element.style.zIndex = '1000';
-        element.style.pointerEvents = 'auto';
+        element.style.position = "fixed";
+        element.style.zIndex = "1000";
+        element.style.pointerEvents = "auto";
 
         switch(position) {
-            case 'topright':
-                element.style.top = '0.5rem';
-                element.style.right = '0.5rem';
+            case "topright":
+                element.style.top = "0.5rem";
+                element.style.right = "0.5rem";
                 break;
-            case 'topleft':
-                element.style.top = '0.5rem';
-                element.style.left = '0.5rem';
+            case "topleft":
+                element.style.top = "0.5rem";
+                element.style.left = "0.5rem";
                 break;
-            case 'bottomright':
-                element.style.bottom = '0.2rem';
-                element.style.right = '0.5rem';
+            case "bottomright":
+                element.style.bottom = "0.2rem";
+                element.style.right = "0.5rem";
                 break;
-            case 'bottomleft':
-                element.style.bottom = '0.2rem';
-                element.style.left = '0.5rem';
+            case "bottomleft":
+                element.style.bottom = "0.2rem";
+                element.style.left = "0.5rem";
                 break;
         }
 
@@ -739,12 +741,12 @@ class RandomChooserMap {
         if (container && collapseButton) {
             if (this.restaurantsCollapsed) {
                 container.classList.add("collapsed");
-                collapseButton.innerHTML = "⬅";
+                collapseButton.innerHTML = this.options.text?.expandText ?? "Expand";
                 collapseButton.title = this.options.text?.expandRestaurants ?? "Expand restaurants";
             } 
             else {
                 container.classList.remove("collapsed");
-                collapseButton.innerHTML = "➡";
+                collapseButton.innerHTML = this.options.text?.collapseText ?? "Collapse";
                 collapseButton.title = this.options.text?.collapseRestaurants ?? "Collapse restaurants";
             }
         }
@@ -976,8 +978,8 @@ class RandomChooserMap {
             }
         });
 
-        const form = this.addRestaurantDialog.querySelector('form') as HTMLFormElement;
-        form?.addEventListener('submit', (e) => {
+        const form = this.addRestaurantDialog.querySelector("form") as HTMLFormElement;
+        form?.addEventListener("submit", (e) => {
             e.preventDefault();
             if (this.validateRestaurantForm()) {
                 this.addNewRestaurant(
@@ -1068,8 +1070,8 @@ class RandomChooserMap {
             let lat = latDeg + latMin / 60 + latSec / 3600;
             let lng = lngDeg + lngMin / 60 + lngSec / 3600;
             
-            if (latDir === 'S') lat = -lat;
-            if (lngDir === 'W') lng = -lng;
+            if (latDir === "S") lat = -lat;
+            if (lngDir === "W") lng = -lng;
             
             if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                 const latInput = this.addRestaurantDialog.querySelector("#restaurant-lat") as HTMLInputElement;
@@ -1167,7 +1169,7 @@ class RandomChooserMap {
             if (settings.restaurants && settings.restaurants.length > 0) {
                 return settings.restaurants.map((r: any) => ({
                     name: r.name,
-                    description: r.address || "",
+                    address: r.address || "",
                     location: { lat: r.location.lat, long: r.location.long }
                 }));
             }
@@ -1249,7 +1251,7 @@ class RandomChooserMap {
             }
         });
 
-        form.addEventListener('submit', (e) => {
+        form.addEventListener("submit", (e) => {
             e.preventDefault();
             this.saveWeightsFromDialog();
             this.editWeightsDialog?.close();
@@ -1376,7 +1378,7 @@ class RandomChooserMap {
             
             this.tempMarker = Leaflet.marker([lat, lng], {
                 icon: Leaflet.icon({
-                    iconUrl: this.options.style?.randomMarker || '/src/assets/restaurant.png',
+                    iconUrl: this.options.style?.randomMarker || "/src/assets/restaurant.png",
                     iconSize: [32, 32],
                     popupAnchor: [0, -16]
                 })
@@ -1441,11 +1443,11 @@ class RandomChooserMap {
             };
 
             const dataStr = JSON.stringify(exportObject, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
 
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `restaurants-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `restaurants-data-${new Date().toISOString().split("T")[0]}.json`;
 
             document.body.appendChild(link);
             link.click();
@@ -1474,15 +1476,15 @@ class RandomChooserMap {
                     lg: r.location.long,
                     ...(r.weight !== undefined && r.weight !== 1 ? { w: r.weight } : {})
                 }));
-                params.set('r', JSON.stringify(restaurantsData));
+                params.set("r", JSON.stringify(restaurantsData));
             }
 
             if (settings.originPosition) {
-                params.set('o', `${settings.originPosition.lat},${settings.originPosition.lng}`);
+                params.set("o", `${settings.originPosition.lat},${settings.originPosition.lng}`);
             }
 
             if (settings.weightsEnabled !== undefined) {
-                params.set('we', settings.weightsEnabled ? '1' : '0');
+                params.set("we", settings.weightsEnabled ? "1" : "0");
             }
 
             const baseUrl = window.location.origin + window.location.pathname;
@@ -1491,11 +1493,11 @@ class RandomChooserMap {
             navigator.clipboard.writeText(url).then(() => {
                 alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
             }).catch(() => {
-                const textArea = document.createElement('textarea');
+                const textArea = document.createElement("textarea");
                 textArea.value = url;
                 document.body.appendChild(textArea);
                 textArea.select();
-                document.execCommand('copy');
+                document.execCommand("copy");
                 document.body.removeChild(textArea);
                 alert(this.options.text?.urlExportSuccess ?? "URL generated successfully! Copied to clipboard.");
             });
@@ -1515,7 +1517,7 @@ class RandomChooserMap {
             const settings = this.loadSettings();
             let hasChanges = false;
 
-            const restaurantsParam = urlParams.get('r');
+            const restaurantsParam = urlParams.get("r");
             if (restaurantsParam) {
                 try {
                     const restaurantsData = JSON.parse(restaurantsParam);
@@ -1536,18 +1538,18 @@ class RandomChooserMap {
                 }
             }
 
-            const originParam = urlParams.get('o');
+            const originParam = urlParams.get("o");
             if (originParam) {
-                const [lat, lng] = originParam.split(',').map(Number);
+                const [lat, lng] = originParam.split(",").map(Number);
                 if (!isNaN(lat) && !isNaN(lng)) {
                     settings.originPosition = { lat, lng };
                     hasChanges = true;
                 }
             }
 
-            const weightsEnabledParam = urlParams.get('we');
+            const weightsEnabledParam = urlParams.get("we");
             if (weightsEnabledParam !== null) {
-                settings.weightsEnabled = weightsEnabledParam === '1';
+                settings.weightsEnabled = weightsEnabledParam === "1";
                 hasChanges = true;
             }
 
@@ -1563,12 +1565,12 @@ class RandomChooserMap {
 
     private importData() {
         try {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.json';
-            fileInput.style.display = 'none';
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = ".json";
+            fileInput.style.display = "none";
 
-            fileInput.addEventListener('change', (event) => {
+            fileInput.addEventListener("change", (event) => {
                 const file = (event.target as HTMLInputElement).files?.[0];
                 if (!file) return;
 
@@ -1624,19 +1626,19 @@ class RandomChooserMap {
 
 
     private validateImportData(data: any): boolean {
-        if (!data || typeof data !== 'object') return false;
+        if (!data || typeof data !== "object") return false;
 
         if (data.restaurants && Array.isArray(data.restaurants)) {
             for (const restaurant of data.restaurants) {
                 if (!restaurant.name || !restaurant.location || 
-                    typeof restaurant.location.lat !== 'number' ||
-                    typeof restaurant.location.long !== 'number') {
+                    typeof restaurant.location.lat !== "number" ||
+                    typeof restaurant.location.long !== "number") {
                     return false;
                 }
             }
         }
 
-        if (data.weights && typeof data.weights !== 'object') {
+        if (data.weights && typeof data.weights !== "object") {
             return false;
         }
 
