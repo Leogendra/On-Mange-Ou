@@ -50,5 +50,7 @@
     "exportUrl": "🔗 Exporter via URL",
     "urlExportSuccess": "URL générée avec succès ! Copiée dans le presse-papier.",
     "collapseRestaurants": "Réduire les restaurants",
-    "expandRestaurants": "Développer les restaurants"
+    "expandRestaurants": "Développer les restaurants",
+    "collapseText": "➡️",
+    "expandText": "⬅️"
 }
