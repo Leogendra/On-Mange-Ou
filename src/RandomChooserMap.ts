@@ -304,7 +304,15 @@ class RandomChooserMap {
 
 
     private showSettingsMenu(button: HTMLElement) {
+
+        const existing = document.getElementById("button-settings-menu");
+        if (existing !== null) { 
+            existing.remove(); 
+            return; // Close the menu for mobile
+        }
+
         const menu = document.createElement("div");
+        menu.id = "button-settings-menu";
         menu.className = "reset-menu";
 
         const resetWeightsOption = document.createElement("button");
