@@ -1,4 +1,4 @@
-import Leaflet, { map } from "leaflet";
+import Leaflet from "leaflet";
 import { Location } from "./utils/location";
 import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
