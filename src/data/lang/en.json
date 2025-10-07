@@ -52,5 +52,10 @@
     "collapseRestaurants": "Collapse restaurants",
     "expandRestaurants": "Expand restaurants",
     "collapseText": "➡️",
-    "expandText": "⬅️"
+    "expandText": "⬅️",
+    "changeMapStyle": "🗺️ Change map style",
+    "mapStyleTitle": "Map Style",
+    "mapStyleCustom": "Custom URL",
+    "mapStyleSave": "Apply",
+    "mapStyleCancel": "Cancel"
 }
