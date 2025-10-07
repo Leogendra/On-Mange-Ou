@@ -1,10 +1,10 @@
 # 🍴 On Mange Où ?
 
-**On Mange Où ?** is a random restaurant chooser. It's a map presenting a set of restaurant with a button that select a random one among them.
+**On Mange Où ?** is a random restaurant chooser with a map presenting a set of restaurant of your choice with a button that select a random one among them. You can click on the map to add a restaurant at the clicked location. The restaurant list can be stored and shared via URL or JSON.
 
 It's developed in pure _HTML_/_CSS_/_Typescript_ using [**Vite**](https://vite.dev/) as a builder. The project package is managed with [**PNPM**](https://pnpm.io/). The map is done with [**Leaflet**](https://leafletjs.com/) using [**OpenStreetMap France**](https://www.openstreetmap.fr/) tiles.
 
-The project is available live at at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
+The project is available at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
 
 ## ✨ Features
 
