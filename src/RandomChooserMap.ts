@@ -402,10 +402,10 @@ class RandomChooserMap {
         });
 
         menu.appendChild(exportDataOption);
-        menu.appendChild(exportUrlOption);
         menu.appendChild(importDataOption);
-        menu.appendChild(toggleWeightsOption);
+        menu.appendChild(exportUrlOption);
         menu.appendChild(changeMapStyleOption);
+        menu.appendChild(toggleWeightsOption);
         
         if (weightsEnabled) {
             menu.appendChild(editWeightsOption);
