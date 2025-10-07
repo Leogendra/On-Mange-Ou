@@ -1,4 +1,4 @@
-import Leaflet from "leaflet";
+import Leaflet, { map } from "leaflet";
 import { Location } from "./utils/location";
 import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
@@ -106,9 +106,14 @@ type RandomChooserMapOptions = {
         expandText: string;
         changeMapStyle: string;
         mapStyleTitle: string;
-        mapStyleCustom: string;
         mapStyleSave: string;
         mapStyleCancel: string;
+        mapStyleDefault: string;
+        mapStyleBzr: string;
+        mapStyleCartocdnLight: string;
+        mapStyleCartocdnDark: string;
+        mapStyleOpentopomap: string;
+        mapStyleCustom: string;
     };
 };
 
@@ -1302,11 +1307,11 @@ class RandomChooserMap {
 
         // Predefined map styles
         const mapStyles = [
-            { name: "OpenStreetMap", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
-            { name: "OpenStreetMap Bzh", url: "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png" },
-            { name: "CartoDB Positron", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
-            { name: "CartoDB Dark Matter", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
-            { name: "OpenTopoMap", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
+            { name: this.options.text?.mapStyleDefault ?? "OpenStreetMap default", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
+            { name: this.options.text?.mapStyleBzr ?? "OpenStreetMap clean", url: "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png" },
+            { name: this.options.text?.mapStyleCartocdnLight ?? "Light map", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
+            { name: this.options.text?.mapStyleCartocdnDark ?? "Dark map", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
+            { name: this.options.text?.mapStyleOpentopomap ?? "Relief map", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
         ];
 
         const currentSettings = this.loadSettings();

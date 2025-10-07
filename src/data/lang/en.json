@@ -55,7 +55,12 @@
     "expandText": "⬅️",
     "changeMapStyle": "🗺️ Change map style",
     "mapStyleTitle": "Map Style",
-    "mapStyleCustom": "Custom URL",
     "mapStyleSave": "Apply",
-    "mapStyleCancel": "Cancel"
+    "mapStyleCancel": "Cancel",
+    "mapStyleDefault": "Openstreetmap default",
+    "mapStyleBzr": "Openstreetmap clean",
+    "mapStyleCartocdnLight": "Light map",
+    "mapStyleCartocdnDark": "Dark map",
+    "mapStyleOpentopomap": "Relief map",
+    "mapStyleCustom": "Custom URL"
 }
