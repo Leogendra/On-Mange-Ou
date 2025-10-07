@@ -26,6 +26,7 @@ interface AppSettings {
         weight?: number;
     }>;
     weightsEnabled?: boolean;
+    mapStyle?: string;
     originPosition?: {
         lat: number;
         lng: number;
@@ -103,6 +104,11 @@ type RandomChooserMapOptions = {
         expandRestaurants: string;
         collapseText: string;
         expandText: string;
+        changeMapStyle: string;
+        mapStyleTitle: string;
+        mapStyleCustom: string;
+        mapStyleSave: string;
+        mapStyleCancel: string;
     };
 };
 
@@ -131,6 +137,9 @@ class RandomChooserMap {
     private tempMarker: Leaflet.Marker | null = null;
     private addRestaurantDialog: HTMLDialogElement | null = null;
     private editWeightsDialog: HTMLDialogElement | null = null;
+    private mapStyleDialog: HTMLDialogElement | null = null;
+
+    private originalMapStyle: string | null = null;
     private hiddenRestaurants: Set<RandomChoice> = new Set();
     private originMarker: Leaflet.Marker | null = null;
     private actionChoiceDialog: HTMLDialogElement | null = null;
@@ -223,6 +232,7 @@ class RandomChooserMap {
         this.addInteractions();
         this.createAddRestaurantDialog();
         this.createEditWeightsDialog();
+        this.createMapStyleDialog();
         this.createActionChoiceDialog();
         this.addMapClickHandler();
     }
@@ -244,16 +254,17 @@ class RandomChooserMap {
 
 
     private addTileSet() {
-        Leaflet.tileLayer(
-            this.options.view?.mapStyle || "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+        const settings = this.loadSettings();
+        const mapStyleUrl = settings.mapStyle 
+            || this.options.view?.mapStyle 
+            || "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png";
 
-            {
-                attribution:
-                    "&copy; <a href='https://openstreetmap.fr'>OpenStreetMap France</a>",
-                minZoom: 1,
-                maxZoom: 20
-            }
-        ).addTo(this.map!);
+        Leaflet.tileLayer(mapStyleUrl, {
+            attribution:
+                "&copy; <a href='https://openstreetmap.fr'>OpenStreetMap France</a>",
+            minZoom: 1,
+            maxZoom: 20
+        }).addTo(this.map!);
     }
 
 
@@ -372,6 +383,15 @@ class RandomChooserMap {
             document.body.removeChild(menu);
         });
 
+        const changeMapStyleOption = document.createElement("button");
+        changeMapStyleOption.textContent = this.options.text?.changeMapStyle ?? "🗺️ Change map style";
+        changeMapStyleOption.className = "reset-menu-item";
+        changeMapStyleOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.showMapStyleDialog();
+            document.body.removeChild(menu);
+        });
+
         const exportUrlOption = document.createElement("button");
         exportUrlOption.textContent = this.options.text?.exportUrl ?? "🔗 Export via URL";
         exportUrlOption.className = "reset-menu-item";
@@ -385,6 +405,7 @@ class RandomChooserMap {
         menu.appendChild(exportUrlOption);
         menu.appendChild(importDataOption);
         menu.appendChild(toggleWeightsOption);
+        menu.appendChild(changeMapStyleOption);
         
         if (weightsEnabled) {
             menu.appendChild(editWeightsOption);
@@ -1266,6 +1287,158 @@ class RandomChooserMap {
         });
     }
 
+    private createMapStyleDialog() {
+        this.mapStyleDialog = document.createElement("dialog");
+        this.mapStyleDialog.id = "map-style-dialog";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = this.options.text?.mapStyleTitle ?? "Map style";
+
+        const stylesContainer = document.createElement("div");
+        stylesContainer.className = "map-styles-container";
+
+        // Predefined map styles
+        const mapStyles = [
+            { name: "OpenStreetMap", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
+            { name: "OpenStreetMap Bzh", url: "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png" },
+            { name: "CartoDB Positron", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
+            { name: "CartoDB Dark Matter", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
+            { name: "OpenTopoMap", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
+        ];
+
+        const currentSettings = this.loadSettings();
+        const currentMapStyle = currentSettings.mapStyle || "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png";
+
+        mapStyles.forEach(style => {
+            const styleOption = document.createElement("div");
+            styleOption.className = "map-style-option";
+
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "mapStyle";
+            radio.value = style.url;
+            radio.id = `style-${style.name.replace(/\s+/g, '-').toLowerCase()}`;
+            radio.checked = style.url === currentMapStyle;
+
+            const label = document.createElement("label");
+            label.htmlFor = radio.id;
+            label.textContent = style.name;
+
+            styleOption.appendChild(radio);
+            styleOption.appendChild(label);
+            stylesContainer.appendChild(styleOption);
+        });
+
+        // Custom URL option
+        const customOption = document.createElement("div");
+        customOption.className = "map-style-option";
+
+        const customRadio = document.createElement("input");
+        customRadio.type = "radio";
+        customRadio.name = "mapStyle";
+        customRadio.value = "custom";
+        customRadio.id = "style-custom";
+        
+        const customLabel = document.createElement("label");
+        customLabel.htmlFor = "style-custom";
+        customLabel.textContent = this.options.text?.mapStyleCustom ?? "Custom URL";
+
+        const customInput = document.createElement("input");
+        customInput.type = "text";
+        customInput.id = "custom-map-url";
+        customInput.placeholder = "https://example.com/{z}/{x}/{y}.png";
+        customInput.className = "custom-url-input";
+        
+        // Check if current style is custom (not in predefined list)
+        const isCustom = !mapStyles.some(style => style.url === currentMapStyle);
+        if (isCustom) {
+            customRadio.checked = true;
+            customInput.value = currentMapStyle;
+        }
+
+        customOption.appendChild(customRadio);
+        customOption.appendChild(customLabel);
+        customOption.appendChild(customInput);
+        stylesContainer.appendChild(customOption);
+
+        // Enable/disable custom input based on radio selection
+        const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', () => {
+                customInput.disabled = radio.value !== 'custom';
+                
+                // Changement en temps réel de la carte
+                let newMapStyle: string;
+                if (radio.value === 'custom') {
+                    if (customInput.value.trim()) {
+                        newMapStyle = customInput.value.trim();
+                    } else {
+                        return; // Ne pas changer si custom URL est vide
+                    }
+                } else {
+                    newMapStyle = radio.value;
+                }
+                this.updateMapStyle(newMapStyle);
+            });
+        });
+        
+        // Changement en temps réel pour l'input custom
+        customInput.addEventListener('input', () => {
+            if (customRadio.checked && customInput.value.trim()) {
+                this.updateMapStyle(customInput.value.trim());
+            }
+        });
+        
+        customInput.disabled = !customRadio.checked;
+
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "dialog-buttons";
+        
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = this.options.text?.mapStyleCancel ?? "Cancel";
+        
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "submit";
+        saveBtn.textContent = this.options.text?.mapStyleSave ?? "Apply";
+
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(saveBtn);
+
+        form.appendChild(title);
+        form.appendChild(stylesContainer);
+        form.appendChild(buttonsDiv);
+
+        this.mapStyleDialog.appendChild(form);
+        document.body.appendChild(this.mapStyleDialog);
+
+        cancelBtn.addEventListener("click", () => {
+            // Restaurer le style original
+            if (this.originalMapStyle) {
+                this.updateMapStyle(this.originalMapStyle);
+            }
+            this.mapStyleDialog?.close();
+        });
+
+        this.mapStyleDialog.addEventListener("click", (e) => {
+            if (e.target === this.mapStyleDialog) {
+                // Clic à l'extérieur = sauvegarder le style actuel
+                this.saveCurrentMapStyle();
+                this.mapStyleDialog?.close();
+            }
+        });
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            // Bouton Appliquer = sauvegarder le style actuel
+            this.saveCurrentMapStyle();
+            this.mapStyleDialog?.close();
+        });
+    }
+
 
     private showEditWeightsDialog() {
         if (!this.editWeightsDialog) return;
@@ -1322,6 +1495,53 @@ class RandomChooserMap {
         this.addInteractions();
     }
 
+    private showMapStyleDialog() {
+        if (!this.mapStyleDialog) return;
+
+        // Sauvegarder le style de carte actuel
+        const settings = this.loadSettings();
+        this.originalMapStyle = settings.mapStyle 
+            || this.options.view?.mapStyle 
+            || "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png";
+
+        this.mapStyleDialog.showModal();
+    }
+
+    private saveCurrentMapStyle() {
+        // Obtenir le style actuellement affiché sur la carte
+        if (!this.map) return;
+        
+        let currentMapStyle: string | null = null;
+        
+        // Trouver le tile layer actuel pour obtenir son URL
+        this.map.eachLayer((layer) => {
+            if (layer instanceof Leaflet.TileLayer) {
+                // @ts-ignore - Accéder à la propriété privée _url
+                currentMapStyle = layer._url || null;
+            }
+        });
+        
+        if (currentMapStyle) {
+            const settings = this.loadSettings();
+            this.updateSettings({ ...settings, mapStyle: currentMapStyle });
+        }
+    }
+
+    private updateMapStyle(newStyleUrl: string) {
+        if (!this.map) return;
+
+        // Remove existing tile layer
+        this.map.eachLayer((layer) => {
+            if (layer instanceof Leaflet.TileLayer) {
+                this.map?.removeLayer(layer);
+            }
+        });
+
+        // Add new tile layer
+        Leaflet.tileLayer(newStyleUrl, {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
+    }
 
     private createActionChoiceDialog() {
         this.actionChoiceDialog = document.createElement("dialog");
