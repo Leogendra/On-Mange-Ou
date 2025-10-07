@@ -55,7 +55,12 @@
     "expandText": "⬅️",
     "changeMapStyle": "🗺️ Changer le style de carte",
     "mapStyleTitle": "Style de carte",
-    "mapStyleCustom": "URL personnalisée",
     "mapStyleSave": "Appliquer",
-    "mapStyleCancel": "Annuler"
+    "mapStyleCancel": "Annuler",
+    "mapStyleDefault": "Openstreetmap défaut",
+    "mapStyleBzr": "Carte épurée",
+    "mapStyleCartocdnLight": "Carte claire",
+    "mapStyleCartocdnDark": "Carte sombre",
+    "mapStyleOpentopomap": "Carte Relief",
+    "mapStyleCustom": "URL personnalisée"
 }
