@@ -1,0 +1,20 @@
+{
+    "initialLat": 43.611074,
+    "initialLng": 3.881645,
+    "initialZoom": 15,
+    "language": "en",
+    "mapStyle": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+    "defaultRestaurants": [
+        {
+            "name": "Local Cafe",
+            "location": { "lat": 43.6087, "long": 3.8799 },
+            "weight": 1
+        },
+        {
+            "name": "Pizza Place",
+            "location": { "lat": 43.6079, "long": 3.8803 },
+            "weight": 1
+        }
+    ]
+}
