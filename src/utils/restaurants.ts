@@ -1,6 +1,5 @@
 import { Location } from "./location";
 import { RandomChoice } from "../RandomChooserMap";
-import config from "../data/config.json";
 
 
 export class Restaurant implements RandomChoice {
@@ -24,11 +23,14 @@ export class Restaurant implements RandomChoice {
     }
 }
 
-export const all: Restaurant[] = config.defaultRestaurants.map(
-    (r) => new Restaurant(
-        r.name,
-        Location.at(r.location.lat, r.location.long)
-    )
-);
+export function createRestaurantsFromConfig(config: any): Restaurant[] {
+    if (!config || !Array.isArray(config.defaultRestaurants)) return [];
 
-export default all;
+    return config.defaultRestaurants.map((r: any) => new Restaurant(
+        r.name,
+        Location.at(r.location.lat, r.location.long),
+        r.address || ""
+    ));
+}
+
+export default createRestaurantsFromConfig;

@@ -104,6 +104,8 @@ type RandomChooserMapOptions = {
         expandRestaurants: string;
         collapseText: string;
         expandText: string;
+        loadCustomConfig: string;
+        customConfigTitle: string;
         changeMapStyle: string;
         mapStyleTitle: string;
         mapStyleSave: string;
@@ -114,7 +116,11 @@ type RandomChooserMapOptions = {
         mapStyleCartocdnDark: string;
         mapStyleOpentopomap: string;
         mapStyleCustom: string;
+        resetConfiguration: string;
+        resetConfigurationConfirmation: string;
     };
+    availableConfigs?: string[];
+    selectedConfig?: string;
 };
 
 
@@ -143,6 +149,7 @@ class RandomChooserMap {
     private addRestaurantDialog: HTMLDialogElement | null = null;
     private editWeightsDialog: HTMLDialogElement | null = null;
     private mapStyleDialog: HTMLDialogElement | null = null;
+    private configSelectorDialog: HTMLDialogElement | null = null;
 
     private originalMapStyle: string | null = null;
     private hiddenRestaurants: Set<RandomChoice> = new Set();
@@ -224,7 +231,6 @@ class RandomChooserMap {
 
 
     public mountOn(root: HTMLElement | string) {
-        // Check for URL parameters and import data if present
         this.parseUrlParameters();
         
         this.map = Leaflet.map(root);
@@ -238,6 +244,7 @@ class RandomChooserMap {
         this.createAddRestaurantDialog();
         this.createEditWeightsDialog();
         this.createMapStyleDialog();
+        this.createConfigSelectorDialog();
         this.createActionChoiceDialog();
         this.addMapClickHandler();
     }
@@ -341,7 +348,7 @@ class RandomChooserMap {
         });
 
         const resetRestaurantsOption = document.createElement("button");
-        resetRestaurantsOption.textContent = this.options.text?.resetRestaurants ?? "Reset restaurants";
+        resetRestaurantsOption.textContent = this.options.text?.resetConfiguration ?? "Reset configuration";
         resetRestaurantsOption.className = "reset-menu-item";
         resetRestaurantsOption.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -397,6 +404,15 @@ class RandomChooserMap {
             document.body.removeChild(menu);
         });
 
+    const chooseConfigOption = document.createElement("button");
+    chooseConfigOption.textContent = this.options.text?.loadCustomConfig ?? "Load configuration";
+        chooseConfigOption.className = "reset-menu-item";
+        chooseConfigOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.showConfigSelectorDialog();
+            document.body.removeChild(menu);
+        });
+
         const exportUrlOption = document.createElement("button");
         exportUrlOption.textContent = this.options.text?.exportUrl ?? "🔗 Export via URL";
         exportUrlOption.className = "reset-menu-item";
@@ -408,8 +424,9 @@ class RandomChooserMap {
 
         menu.appendChild(exportDataOption);
         menu.appendChild(importDataOption);
-        menu.appendChild(exportUrlOption);
-        menu.appendChild(changeMapStyleOption);
+    menu.appendChild(exportUrlOption);
+    menu.appendChild(chooseConfigOption);
+    menu.appendChild(changeMapStyleOption);
         menu.appendChild(toggleWeightsOption);
         
         if (weightsEnabled) {
@@ -687,23 +704,15 @@ class RandomChooserMap {
 
 
     private resetToDefaultRestaurants() {
-        const confirmMessage = this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.";
+        const confirmMessage = this.options.text?.resetConfigurationConfirmation ?? this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset configuration to defaults? This will remove all local settings.";
         if (confirm(confirmMessage)) {
-            for (const marker of this.markerCache.values()) {
-                if (this.map) {
-                    this.map.removeLayer(marker);
-                }
+            try {
+                localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+            } catch (err) {
+                console.error('Error clearing settings from localStorage', err);
             }
-            this.markerCache.clear();
-            this.controlCache.clear();
-
-            this.choices = [...this.defaultChoices];
-            this.updateSettings({ restaurants: [] });
-
-            this.addRandomChoiceMarkers();
-            this.addRandomChoiceControls();
-            this.addInteractions();
-            this.saveRestaurantsToStorage();
+            // Reload the page so the selected/default config is loaded fresh
+            window.location.reload();
         }
     }
 
@@ -1240,8 +1249,9 @@ class RandomChooserMap {
 
 
     private createEditWeightsDialog() {
-        this.editWeightsDialog = document.createElement("dialog");
-        this.editWeightsDialog.id = "edit-weights-dialog";
+    this.editWeightsDialog = document.createElement("dialog");
+    this.editWeightsDialog.id = "edit-weights-dialog";
+    this.editWeightsDialog.className = "dialog-menu";
 
         const form = document.createElement("form");
         form.method = "dialog";
@@ -1293,8 +1303,9 @@ class RandomChooserMap {
     }
 
     private createMapStyleDialog() {
-        this.mapStyleDialog = document.createElement("dialog");
-        this.mapStyleDialog.id = "map-style-dialog";
+    this.mapStyleDialog = document.createElement("dialog");
+    this.mapStyleDialog.id = "map-style-dialog";
+    this.mapStyleDialog.className = "dialog-menu";
 
         const form = document.createElement("form");
         form.method = "dialog";
@@ -1369,28 +1380,27 @@ class RandomChooserMap {
         customOption.appendChild(customInput);
         stylesContainer.appendChild(customOption);
 
-        // Enable/disable custom input based on radio selection
         const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
         radioButtons.forEach(radio => {
             radio.addEventListener('change', () => {
                 customInput.disabled = radio.value !== 'custom';
                 
-                // Changement en temps réel de la carte
                 let newMapStyle: string;
                 if (radio.value === 'custom') {
                     if (customInput.value.trim()) {
                         newMapStyle = customInput.value.trim();
-                    } else {
-                        return; // Ne pas changer si custom URL est vide
                     }
-                } else {
+                    else { 
+                        return; 
+                    }
+                } 
+                else {
                     newMapStyle = radio.value;
                 }
                 this.updateMapStyle(newMapStyle);
             });
         });
         
-        // Changement en temps réel pour l'input custom
         customInput.addEventListener('input', () => {
             if (customRadio.checked && customInput.value.trim()) {
                 this.updateMapStyle(customInput.value.trim());
@@ -1421,7 +1431,6 @@ class RandomChooserMap {
         document.body.appendChild(this.mapStyleDialog);
 
         cancelBtn.addEventListener("click", () => {
-            // Restaurer le style original
             if (this.originalMapStyle) {
                 this.updateMapStyle(this.originalMapStyle);
             }
@@ -1430,7 +1439,6 @@ class RandomChooserMap {
 
         this.mapStyleDialog.addEventListener("click", (e) => {
             if (e.target === this.mapStyleDialog) {
-                // Clic à l'extérieur = sauvegarder le style actuel
                 this.saveCurrentMapStyle();
                 this.mapStyleDialog?.close();
             }
@@ -1438,9 +1446,110 @@ class RandomChooserMap {
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
-            // Bouton Appliquer = sauvegarder le style actuel
             this.saveCurrentMapStyle();
             this.mapStyleDialog?.close();
+        });
+    }
+
+    private showConfigSelectorDialog() {
+        if (!this.configSelectorDialog) return;
+        this.configSelectorDialog.showModal();
+    }
+
+    private createConfigSelectorDialog() {
+    this.configSelectorDialog = document.createElement("dialog");
+    this.configSelectorDialog.id = "config-selector-dialog";
+    this.configSelectorDialog.className = "dialog-menu";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = this.options.text?.customConfigTitle ?? "Load configuration";
+
+    const container = document.createElement("div");
+    container.className = "map-styles-container";
+
+        const available = (this.options as any)?.availableConfigs || [];
+        const current = (this.options as any)?.selectedConfig || null;
+
+        if (available.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "No default configurations available.";
+            container.appendChild(p);
+        } else {
+            available.forEach((name: string) => {
+                const row = document.createElement("div");
+                row.className = "map-style-option";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "config";
+                radio.value = name;
+                radio.id = `config-${name}`;
+                if (current === name) radio.checked = true;
+
+                const label = document.createElement("label");
+                label.htmlFor = radio.id;
+                label.textContent = name;
+
+                row.appendChild(radio);
+                row.appendChild(label);
+                container.appendChild(row);
+            });
+        }
+
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "dialog-buttons";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "Cancel";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "submit";
+        saveBtn.textContent = "Apply";
+
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(saveBtn);
+
+        form.appendChild(title);
+        form.appendChild(container);
+        form.appendChild(buttonsDiv);
+
+        this.configSelectorDialog.appendChild(form);
+        document.body.appendChild(this.configSelectorDialog);
+
+        cancelBtn.addEventListener("click", () => {
+            this.configSelectorDialog?.close();
+        });
+
+        this.configSelectorDialog.addEventListener("click", (e) => {
+            if (e.target === this.configSelectorDialog) {
+                this.configSelectorDialog?.close();
+            }
+        });
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const selected = Array.from(this.configSelectorDialog!.querySelectorAll('input[name="config"]'))
+                .find((i: any) => (i as HTMLInputElement).checked) as HTMLInputElement | undefined;
+            if (selected) {
+                try {
+                    window.localStorage.setItem('selectedConfig', selected.value);
+                } catch (err) {
+                    console.error('Error saving selected config', err);
+                }
+                try {
+                    localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+                } catch (err) {
+                    console.error('Error clearing settings from localStorage', err);
+                }
+                // reload to apply selected config
+                window.location.reload();
+            } else {
+                this.configSelectorDialog?.close();
+            }
         });
     }
 
@@ -1503,7 +1612,7 @@ class RandomChooserMap {
     private showMapStyleDialog() {
         if (!this.mapStyleDialog) return;
 
-        // Sauvegarder le style de carte actuel
+        // Save current map style to revert if needed
         const settings = this.loadSettings();
         this.originalMapStyle = settings.mapStyle 
             || this.options.view?.mapStyle 
@@ -1513,15 +1622,13 @@ class RandomChooserMap {
     }
 
     private saveCurrentMapStyle() {
-        // Obtenir le style actuellement affiché sur la carte
         if (!this.map) return;
         
         let currentMapStyle: string | null = null;
         
-        // Trouver le tile layer actuel pour obtenir son URL
         this.map.eachLayer((layer) => {
             if (layer instanceof Leaflet.TileLayer) {
-                // @ts-ignore - Accéder à la propriété privée _url
+                // @ts-ignore - private property
                 currentMapStyle = layer._url || null;
             }
         });
@@ -1535,14 +1642,12 @@ class RandomChooserMap {
     private updateMapStyle(newStyleUrl: string) {
         if (!this.map) return;
 
-        // Remove existing tile layer
         this.map.eachLayer((layer) => {
             if (layer instanceof Leaflet.TileLayer) {
                 this.map?.removeLayer(layer);
             }
         });
 
-        // Add new tile layer
         Leaflet.tileLayer(newStyleUrl, {
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
