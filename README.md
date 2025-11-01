@@ -2,9 +2,9 @@
 
 **On Mange Où ?** is a random restaurant chooser with a map presenting a set of restaurant of your choice with a button that select a random one among them. You can click on the map to add a restaurant at the clicked location. The restaurant list can be stored and shared via URL or JSON.
 
-It's developed in pure _HTML_/_CSS_/_Typescript_ using [**Vite**](https://vite.dev/) as a builder. The project package is managed with [**PNPM**](https://pnpm.io/). The map is done with [**Leaflet**](https://leafletjs.com/) using [**OpenStreetMap France**](https://www.openstreetmap.fr/) tiles.
+It's developed in pure _HTML_/_CSS_/_Typescript_ using [**Vite**](https://vite.dev/) as a builder. The project package is managed with [**PNPM**](https://pnpm.io/). The map is done with [**Leaflet**](https://leafletjs.com/) using [**OpenStreetMap**](https://www.openstreetmap.fr/) tiles.
 
-The project is available at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
+The project is available at [https://on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh.fr).
 
 ## ✨ Features
 
@@ -21,6 +21,7 @@ The project is available at [on-mange-ou.gatienh.fr](https://on-mange-ou.gatienh
 - Add option to manually set weights
 - Export/import restaurant list via URL
 - Collapse restaurant list
+- Load and save configuration files
 - UI for mobile
 
 ## 🛠️ Development
@@ -39,9 +40,9 @@ pnpm run build
 pnpm run preview
 ```
 
-## ⚙️ Customization
+## ⚙️ Customize multiple configurations
 
-You can customize parameters like initial position or default restaurants by editing the `src/data/config.json` file. The format is as follows :
+The app supports multiple default configuration files for different use cases. You can customize parameters like initial position or default restaurants by editing the `src/data/config/default.json` file. The format is as follows :
 
 ```json
 {
@@ -63,7 +64,21 @@ You can customize parameters like initial position or default restaurants by edi
     ]
 }
 ```
-You can find tile providers at https://leaflet-extras.github.io/leaflet-providers/preview/
+You can find tile providers (mapStyle) at https://leaflet-extras.github.io/leaflet-providers/preview/
+
+To use multiple configurations files, you can place JSON files in `src/data/config/` (e.g. `work.json`, `my-faves.json`). Each fields will override the default config when that file is selected. For example, a minimal config that would only override the language while inheriting all other values from `default.json` could be:
+
+```json
+{
+    "language": "en"
+}
+```
+
+You can select a configuration in two ways:
+- **In-app**: open Settings -> "Load custom configuration" and pick one of the available files.
+- **URL**: append `?config=<name>` in the URL. Example: `http://localhost:5173/?config=minimal`. /!\ Refreshing the page with a `config` parameter will clears the saved settings and reset the configuration.
+
+Info: Exports are produced in the same format as config files so you can take an exported JSON and drop it into `src/data/config/` to use it as it is.
 
 ## 👏 Thanks
 
