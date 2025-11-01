@@ -709,7 +709,7 @@ class RandomChooserMap {
                 localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
             } 
             catch (err) {
-                console.error('Error clearing settings from localStorage', err);
+                console.error("Error clearing settings from localStorage", err);
             }
             // Reload the page so the selected/default config is loaded fresh
             window.location.reload();
@@ -1382,11 +1382,11 @@ class RandomChooserMap {
 
         const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
         radioButtons.forEach(radio => {
-            radio.addEventListener('change', () => {
-                customInput.disabled = radio.value !== 'custom';
+            radio.addEventListener("change", () => {
+                customInput.disabled = radio.value !== "custom";
                 
                 let newMapStyle: string;
-                if (radio.value === 'custom') {
+                if (radio.value === "custom") {
                     if (customInput.value.trim()) {
                         newMapStyle = customInput.value.trim();
                     }
@@ -1401,7 +1401,7 @@ class RandomChooserMap {
             });
         });
         
-        customInput.addEventListener('input', () => {
+        customInput.addEventListener("input", () => {
             if (customRadio.checked && customInput.value.trim()) {
                 this.updateMapStyle(customInput.value.trim());
             }
@@ -1536,14 +1536,14 @@ class RandomChooserMap {
                 .find((i: any) => (i as HTMLInputElement).checked) as HTMLInputElement | undefined;
             if (selected) {
                 try {
-                    window.localStorage.setItem('selectedConfig', selected.value);
+                    window.localStorage.setItem("selectedConfig", selected.value);
                 } catch (err) {
-                    console.error('Error saving selected config', err);
+                    console.error("Error saving selected config", err);
                 }
                 try {
                     localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
                 } catch (err) {
-                    console.error('Error clearing settings from localStorage', err);
+                    console.error("Error clearing settings from localStorage", err);
                 }
                 // reload to apply selected config
                 window.location.reload();
@@ -1649,7 +1649,7 @@ class RandomChooserMap {
         });
 
         Leaflet.tileLayer(newStyleUrl, {
-            attribution: '© OpenStreetMap contributors'
+            attribution: "© OpenStreetMap contributors"
         }).addTo(this.map);
     }
 

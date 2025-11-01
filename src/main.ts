@@ -10,34 +10,50 @@ async function init() {
     const configModules: Record<string, () => Promise<any>> = import.meta.glob("./data/config/*.json");
 
     const availableConfigs = Object.keys(configModules).map(p => {
-        const parts = p.split('/');
+        const parts = p.split("/");
         const file = parts[parts.length - 1];
-        return file.replace(/\.json$/, '');
+        return file.replace(/\.json$/, "");
     });
 
     const urlParams = new URLSearchParams(window.location.search);
-    const requestedConfig = urlParams.get('config') || window.localStorage.getItem('selectedConfig') || 'default';
+    const requestedConfig = urlParams.get("config") || window.localStorage.getItem("selectedConfig") || "default";
 
     // If a config is explicitly requested via URL, clear saved settings so the chosen default is applied
-    if (urlParams.get('config')) {
+    if (urlParams.get("config")) {
         try {
-            window.localStorage.removeItem('settings');
+            window.localStorage.removeItem("settings");
         } catch (e) {
-            console.warn('Unable to clear saved settings:', e);
+            console.warn("Unable to clear saved settings:", e);
         }
     }
 
     let chosenName = requestedConfig;
     if (!availableConfigs.includes(chosenName)) {
-        chosenName = availableConfigs.includes('default') ? 'default' : availableConfigs[0];
+        chosenName = availableConfigs.includes("default") ? "default" : availableConfigs[0];
     }
 
     let config: any | null = null;
 
+    // Load default config first (fallback to the first available if "default" missing)
+    const defaultKey = Object.keys(configModules).find(k => k.endsWith("/default.json")) || Object.keys(configModules)[0];
+    let defaultConfig: any = {};
+    if (defaultKey) {
+        const defaultLoader = configModules[defaultKey];
+        const defMod = await defaultLoader();
+        defaultConfig = defMod.default ?? defMod;
+    }
+
     const loader = configModules[`./data/config/${chosenName}.json`];
     if (loader) {
         const mod = await loader();
-        config = mod.default ?? mod;
+        const selectedConfig = mod.default ?? mod;
+        config = { ...defaultConfig, ...selectedConfig };
+        // if selected config doesn't provide defaultRestaurants, keep default's
+        if (!("defaultRestaurants" in selectedConfig)) {
+            config.defaultRestaurants = defaultConfig.defaultRestaurants;
+        }
+    } else {
+        config = defaultConfig;
     }
 
     const RESTAURANTS = createRestaurantsFromConfig(config);
