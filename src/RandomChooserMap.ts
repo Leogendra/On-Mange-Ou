@@ -53,7 +53,6 @@ type RandomChooserMapOptions = {
         rollAction: string;
         resetAction: string;
         resetWeights: string;
-        resetRestaurants: string;
         hintRestaurants?: string
         weightDescription: string;
         weightResetConfirmation: string;
@@ -73,7 +72,6 @@ type RandomChooserMapOptions = {
         hideRestaurantTooltip: string;
         showRestaurantTooltip: string;
         deleteRestaurantConfirmation: string;
-        resetRestaurantsConfirmation: string;
         resetWeightsConfirmation: string;
         weightLabel: string;
         mapClickChoiceTitle: string;
@@ -121,6 +119,7 @@ type RandomChooserMapOptions = {
     };
     availableConfigs?: string[];
     selectedConfig?: string;
+    language?: string;
 };
 
 
@@ -704,11 +703,12 @@ class RandomChooserMap {
 
 
     private resetToDefaultRestaurants() {
-        const confirmMessage = this.options.text?.resetConfigurationConfirmation ?? this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset configuration to defaults? This will remove all local settings.";
+        const confirmMessage = this.options.text?.resetConfigurationConfirmation ?? "Are you sure you want to reset configuration to defaults? This will remove all local settings.";
         if (confirm(confirmMessage)) {
             try {
                 localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
-            } catch (err) {
+            } 
+            catch (err) {
                 console.error('Error clearing settings from localStorage', err);
             }
             // Reload the page so the selected/default config is loaded fresh
@@ -1773,11 +1773,32 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
 
-            const exportObject = {
-                restaurants: settings.restaurants || [],
-                originPosition: settings.originPosition || null,
-                exportDate: new Date().toISOString(),
-                version: "1.0"
+            const origin = settings.originPosition || (this.currentOriginPosition ? { lat: this.currentOriginPosition.lat, lng: this.currentOriginPosition.lng } : null);
+            const zoom = this.map ? this.map.getZoom() : (this.options.view?.zoom ?? null);
+            const mapStyle = settings.mapStyle || this.options.view?.mapStyle || null;
+            const language = (this.options as any)?.language || null;
+
+            const defaultRestaurants = (settings.restaurants || []).map(r => {
+                const base: any = {
+                    name: r.name,
+                    location: { lat: r.location.lat, long: r.location.long }
+                };
+                if (r.weight !== undefined) {
+                    base.weight = r.weight;
+                }
+                if (r.address && String(r.address).trim() !== "") {
+                    base.address = r.address;
+                }
+                return base;
+            });
+
+            const exportObject: any = {
+                initialLat: origin ? origin.lat : (this.options.view?.origin ? this.options.view.origin.lat : null),
+                initialLng: origin ? origin.lng : (this.options.view?.origin ? this.options.view.origin.lon : null),
+                initialZoom: zoom,
+                language: language,
+                mapStyle: mapStyle,
+                defaultRestaurants: defaultRestaurants,
             };
 
             const dataStr = JSON.stringify(exportObject, null, 2);
@@ -1785,7 +1806,7 @@ class RandomChooserMap {
 
             const link = document.createElement("a");
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `restaurants-data-${new Date().toISOString().split("T")[0]}.json`;
+            link.download = `exported-config-${new Date().toISOString().split("T")[0]}.json`;
 
             document.body.appendChild(link);
             link.click();
@@ -1794,7 +1815,8 @@ class RandomChooserMap {
 
             alert(this.options.text?.exportSuccess ?? "Data exported successfully!");
 
-        } catch (error) {
+        } 
+        catch (error) {
             console.error("Export error:", error);
             alert("Error during export");
         }
@@ -1923,18 +1945,31 @@ class RandomChooserMap {
                         }
 
                         const newSettings: Partial<AppSettings> = {};
-                        
-                        if (importedData.restaurants) {
-                            newSettings.restaurants = importedData.restaurants;
+
+                        // Support both legacy export (restaurants) and config-format (defaultRestaurants)
+                        const restaurantsSource = importedData.defaultRestaurants || importedData.restaurants;
+                        if (restaurantsSource) {
+                            // Normalize restaurants to the settings shape
+                            newSettings.restaurants = restaurantsSource.map((r: any) => ({
+                                name: r.name,
+                                address: r.address || "",
+                                location: { lat: r.location.lat, long: r.location.long },
+                                weight: r.weight !== undefined ? r.weight : (r.w !== undefined ? r.w : 1)
+                            }));
                         }
-                        if (importedData.originPosition) {
-                            newSettings.originPosition = importedData.originPosition;
-                            
-                            this.currentOriginPosition = Leaflet.latLng(importedData.originPosition.lat, importedData.originPosition.lng);
+
+                        // initial position in config format
+                        if (importedData.initialLat !== undefined && importedData.initialLng !== undefined) {
+                            newSettings.originPosition = { lat: importedData.initialLat, lng: importedData.initialLng };
+                            this.currentOriginPosition = Leaflet.latLng(importedData.initialLat, importedData.initialLng);
                             if (this.originMarker) {
                                 this.originMarker.setLatLng(this.currentOriginPosition);
                                 this.map?.setView(this.currentOriginPosition, this.map.getZoom());
                             }
+                        }
+
+                        if (importedData.mapStyle) {
+                            newSettings.mapStyle = importedData.mapStyle;
                         }
 
                         this.updateSettings(newSettings);
@@ -1965,9 +2000,9 @@ class RandomChooserMap {
 
     private validateImportData(data: any): boolean {
         if (!data || typeof data !== "object") return false;
-
-        if (data.restaurants && Array.isArray(data.restaurants)) {
-            for (const restaurant of data.restaurants) {
+        const restaurantsArray = data.restaurants || data.defaultRestaurants;
+        if (restaurantsArray && Array.isArray(restaurantsArray)) {
+            for (const restaurant of restaurantsArray) {
                 if (!restaurant.name || !restaurant.location || 
                     typeof restaurant.location.lat !== "number" ||
                     typeof restaurant.location.long !== "number") {

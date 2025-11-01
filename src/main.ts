@@ -7,7 +7,6 @@ import createRestaurantsFromConfig from "./utils/restaurants";
 import RandomChooserMap from "./RandomChooserMap";
 
 async function init() {
-    // @tsignore - import.meta.glob is provided by Vite
     const configModules: Record<string, () => Promise<any>> = import.meta.glob("./data/config/*.json");
 
     const availableConfigs = Object.keys(configModules).map(p => {
@@ -18,6 +17,15 @@ async function init() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const requestedConfig = urlParams.get('config') || window.localStorage.getItem('selectedConfig') || 'default';
+
+    // If a config is explicitly requested via URL, clear saved settings so the chosen default is applied
+    if (urlParams.get('config')) {
+        try {
+            window.localStorage.removeItem('settings');
+        } catch (e) {
+            console.warn('Unable to clear saved settings:', e);
+        }
+    }
 
     let chosenName = requestedConfig;
     if (!availableConfigs.includes(chosenName)) {
@@ -49,7 +57,8 @@ async function init() {
         },
         text: languageKeys.default,
         availableConfigs: availableConfigs,
-        selectedConfig: chosenName
+        selectedConfig: chosenName,
+        language: config.language
     }).mountOn("map");
 }
 
