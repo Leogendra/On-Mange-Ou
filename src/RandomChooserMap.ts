@@ -53,7 +53,6 @@ type RandomChooserMapOptions = {
         rollAction: string;
         resetAction: string;
         resetWeights: string;
-        resetRestaurants: string;
         hintRestaurants?: string
         weightDescription: string;
         weightResetConfirmation: string;
@@ -73,7 +72,6 @@ type RandomChooserMapOptions = {
         hideRestaurantTooltip: string;
         showRestaurantTooltip: string;
         deleteRestaurantConfirmation: string;
-        resetRestaurantsConfirmation: string;
         resetWeightsConfirmation: string;
         weightLabel: string;
         mapClickChoiceTitle: string;
@@ -104,6 +102,8 @@ type RandomChooserMapOptions = {
         expandRestaurants: string;
         collapseText: string;
         expandText: string;
+        loadCustomConfig: string;
+        customConfigTitle: string;
         changeMapStyle: string;
         mapStyleTitle: string;
         mapStyleSave: string;
@@ -114,7 +114,12 @@ type RandomChooserMapOptions = {
         mapStyleCartocdnDark: string;
         mapStyleOpentopomap: string;
         mapStyleCustom: string;
+        resetConfiguration: string;
+        resetConfigurationConfirmation: string;
     };
+    availableConfigs?: string[];
+    selectedConfig?: string;
+    language?: string;
 };
 
 
@@ -143,6 +148,7 @@ class RandomChooserMap {
     private addRestaurantDialog: HTMLDialogElement | null = null;
     private editWeightsDialog: HTMLDialogElement | null = null;
     private mapStyleDialog: HTMLDialogElement | null = null;
+    private configSelectorDialog: HTMLDialogElement | null = null;
 
     private originalMapStyle: string | null = null;
     private hiddenRestaurants: Set<RandomChoice> = new Set();
@@ -224,7 +230,6 @@ class RandomChooserMap {
 
 
     public mountOn(root: HTMLElement | string) {
-        // Check for URL parameters and import data if present
         this.parseUrlParameters();
         
         this.map = Leaflet.map(root);
@@ -238,6 +243,7 @@ class RandomChooserMap {
         this.createAddRestaurantDialog();
         this.createEditWeightsDialog();
         this.createMapStyleDialog();
+        this.createConfigSelectorDialog();
         this.createActionChoiceDialog();
         this.addMapClickHandler();
     }
@@ -337,16 +343,16 @@ class RandomChooserMap {
         resetWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.resetWeights();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const resetRestaurantsOption = document.createElement("button");
-        resetRestaurantsOption.textContent = this.options.text?.resetRestaurants ?? "Reset restaurants";
+        resetRestaurantsOption.textContent = this.options.text?.resetConfiguration ?? "Reset configuration";
         resetRestaurantsOption.className = "reset-menu-item";
         resetRestaurantsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.resetToDefaultRestaurants();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const exportDataOption = document.createElement("button");
@@ -355,7 +361,7 @@ class RandomChooserMap {
         exportDataOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.exportData();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const importDataOption = document.createElement("button");
@@ -364,7 +370,7 @@ class RandomChooserMap {
         importDataOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.importData();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const editWeightsOption = document.createElement("button");
@@ -373,7 +379,7 @@ class RandomChooserMap {
         editWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showEditWeightsDialog();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const toggleWeightsOption = document.createElement("button");
@@ -385,7 +391,7 @@ class RandomChooserMap {
         toggleWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.toggleWeights();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const changeMapStyleOption = document.createElement("button");
@@ -394,7 +400,16 @@ class RandomChooserMap {
         changeMapStyleOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showMapStyleDialog();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
+        });
+
+    const chooseConfigOption = document.createElement("button");
+    chooseConfigOption.textContent = this.options.text?.loadCustomConfig ?? "Load configuration";
+        chooseConfigOption.className = "reset-menu-item";
+        chooseConfigOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.showConfigSelectorDialog();
+            removeMenuAndCleanup();
         });
 
         const exportUrlOption = document.createElement("button");
@@ -403,13 +418,14 @@ class RandomChooserMap {
         exportUrlOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.exportViaUrl();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         menu.appendChild(exportDataOption);
         menu.appendChild(importDataOption);
-        menu.appendChild(exportUrlOption);
-        menu.appendChild(changeMapStyleOption);
+    menu.appendChild(exportUrlOption);
+    menu.appendChild(chooseConfigOption);
+    menu.appendChild(changeMapStyleOption);
         menu.appendChild(toggleWeightsOption);
         
         if (weightsEnabled) {
@@ -430,13 +446,27 @@ class RandomChooserMap {
             e.stopPropagation();
         });
 
-        const closeMenu = (e: MouseEvent) => {
-            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
-                document.body.removeChild(menu);
+        let closeMenu: ((e: MouseEvent) => void) | null = null;
+        const removeMenuAndCleanup = () => {
+            try {
+                if (menu.parentNode) {
+                    document.body.removeChild(menu);
+                }
+            } catch (err) {
+                // ignore
+            }
+            if (closeMenu) {
                 document.removeEventListener("click", closeMenu);
+                closeMenu = null;
             }
         };
-        setTimeout(() => document.addEventListener("click", closeMenu), 0);
+
+        closeMenu = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
+                removeMenuAndCleanup();
+            }
+        };
+        setTimeout(() => document.addEventListener("click", closeMenu!), 0);
     }
 
 
@@ -687,23 +717,16 @@ class RandomChooserMap {
 
 
     private resetToDefaultRestaurants() {
-        const confirmMessage = this.options.text?.resetRestaurantsConfirmation ?? "Are you sure you want to reset all restaurants to default values? This will remove all added restaurants.";
+        const confirmMessage = this.options.text?.resetConfigurationConfirmation ?? "Are you sure you want to reset configuration to defaults? This will remove all local settings.";
         if (confirm(confirmMessage)) {
-            for (const marker of this.markerCache.values()) {
-                if (this.map) {
-                    this.map.removeLayer(marker);
-                }
+            try {
+                localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+            } 
+            catch (err) {
+                console.error("Error clearing settings from localStorage", err);
             }
-            this.markerCache.clear();
-            this.controlCache.clear();
-
-            this.choices = [...this.defaultChoices];
-            this.updateSettings({ restaurants: [] });
-
-            this.addRandomChoiceMarkers();
-            this.addRandomChoiceControls();
-            this.addInteractions();
-            this.saveRestaurantsToStorage();
+            // Reload the page so the selected/default config is loaded fresh
+            window.location.reload();
         }
     }
 
@@ -1240,8 +1263,9 @@ class RandomChooserMap {
 
 
     private createEditWeightsDialog() {
-        this.editWeightsDialog = document.createElement("dialog");
-        this.editWeightsDialog.id = "edit-weights-dialog";
+    this.editWeightsDialog = document.createElement("dialog");
+    this.editWeightsDialog.id = "edit-weights-dialog";
+    this.editWeightsDialog.className = "dialog-menu";
 
         const form = document.createElement("form");
         form.method = "dialog";
@@ -1293,8 +1317,9 @@ class RandomChooserMap {
     }
 
     private createMapStyleDialog() {
-        this.mapStyleDialog = document.createElement("dialog");
-        this.mapStyleDialog.id = "map-style-dialog";
+    this.mapStyleDialog = document.createElement("dialog");
+    this.mapStyleDialog.id = "map-style-dialog";
+    this.mapStyleDialog.className = "dialog-menu";
 
         const form = document.createElement("form");
         form.method = "dialog";
@@ -1369,29 +1394,28 @@ class RandomChooserMap {
         customOption.appendChild(customInput);
         stylesContainer.appendChild(customOption);
 
-        // Enable/disable custom input based on radio selection
         const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
         radioButtons.forEach(radio => {
-            radio.addEventListener('change', () => {
-                customInput.disabled = radio.value !== 'custom';
+            radio.addEventListener("change", () => {
+                customInput.disabled = radio.value !== "custom";
                 
-                // Changement en temps réel de la carte
                 let newMapStyle: string;
-                if (radio.value === 'custom') {
+                if (radio.value === "custom") {
                     if (customInput.value.trim()) {
                         newMapStyle = customInput.value.trim();
-                    } else {
-                        return; // Ne pas changer si custom URL est vide
                     }
-                } else {
+                    else { 
+                        return; 
+                    }
+                } 
+                else {
                     newMapStyle = radio.value;
                 }
                 this.updateMapStyle(newMapStyle);
             });
         });
         
-        // Changement en temps réel pour l'input custom
-        customInput.addEventListener('input', () => {
+        customInput.addEventListener("input", () => {
             if (customRadio.checked && customInput.value.trim()) {
                 this.updateMapStyle(customInput.value.trim());
             }
@@ -1421,7 +1445,6 @@ class RandomChooserMap {
         document.body.appendChild(this.mapStyleDialog);
 
         cancelBtn.addEventListener("click", () => {
-            // Restaurer le style original
             if (this.originalMapStyle) {
                 this.updateMapStyle(this.originalMapStyle);
             }
@@ -1430,7 +1453,6 @@ class RandomChooserMap {
 
         this.mapStyleDialog.addEventListener("click", (e) => {
             if (e.target === this.mapStyleDialog) {
-                // Clic à l'extérieur = sauvegarder le style actuel
                 this.saveCurrentMapStyle();
                 this.mapStyleDialog?.close();
             }
@@ -1438,9 +1460,110 @@ class RandomChooserMap {
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
-            // Bouton Appliquer = sauvegarder le style actuel
             this.saveCurrentMapStyle();
             this.mapStyleDialog?.close();
+        });
+    }
+
+    private showConfigSelectorDialog() {
+        if (!this.configSelectorDialog) return;
+        this.configSelectorDialog.showModal();
+    }
+
+    private createConfigSelectorDialog() {
+    this.configSelectorDialog = document.createElement("dialog");
+    this.configSelectorDialog.id = "config-selector-dialog";
+    this.configSelectorDialog.className = "dialog-menu";
+
+        const form = document.createElement("form");
+        form.method = "dialog";
+
+        const title = document.createElement("h2");
+        title.textContent = this.options.text?.customConfigTitle ?? "Load configuration";
+
+    const container = document.createElement("div");
+    container.className = "map-styles-container";
+
+        const available = (this.options as any)?.availableConfigs || [];
+        const current = (this.options as any)?.selectedConfig || null;
+
+        if (available.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "No default configurations available.";
+            container.appendChild(p);
+        } else {
+            available.forEach((name: string) => {
+                const row = document.createElement("div");
+                row.className = "map-style-option";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "config";
+                radio.value = name;
+                radio.id = `config-${name}`;
+                if (current === name) radio.checked = true;
+
+                const label = document.createElement("label");
+                label.htmlFor = radio.id;
+                label.textContent = name;
+
+                row.appendChild(radio);
+                row.appendChild(label);
+                container.appendChild(row);
+            });
+        }
+
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "dialog-buttons";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = this.options.text?.mapStyleCancel ?? "Cancel";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "submit";
+        saveBtn.textContent = this.options.text?.mapStyleSave ?? "Apply";
+
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(saveBtn);
+
+        form.appendChild(title);
+        form.appendChild(container);
+        form.appendChild(buttonsDiv);
+
+        this.configSelectorDialog.appendChild(form);
+        document.body.appendChild(this.configSelectorDialog);
+
+        cancelBtn.addEventListener("click", () => {
+            this.configSelectorDialog?.close();
+        });
+
+        this.configSelectorDialog.addEventListener("click", (e) => {
+            if (e.target === this.configSelectorDialog) {
+                this.configSelectorDialog?.close();
+            }
+        });
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const selected = Array.from(this.configSelectorDialog!.querySelectorAll('input[name="config"]'))
+                .find((i: any) => (i as HTMLInputElement).checked) as HTMLInputElement | undefined;
+            if (selected) {
+                try {
+                    window.localStorage.setItem("selectedConfig", selected.value);
+                } catch (err) {
+                    console.error("Error saving selected config", err);
+                }
+                try {
+                    localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
+                } catch (err) {
+                    console.error("Error clearing settings from localStorage", err);
+                }
+                // reload to apply selected config
+                window.location.reload();
+            } else {
+                this.configSelectorDialog?.close();
+            }
         });
     }
 
@@ -1503,7 +1626,7 @@ class RandomChooserMap {
     private showMapStyleDialog() {
         if (!this.mapStyleDialog) return;
 
-        // Sauvegarder le style de carte actuel
+        // Save current map style to revert if needed
         const settings = this.loadSettings();
         this.originalMapStyle = settings.mapStyle 
             || this.options.view?.mapStyle 
@@ -1513,15 +1636,13 @@ class RandomChooserMap {
     }
 
     private saveCurrentMapStyle() {
-        // Obtenir le style actuellement affiché sur la carte
         if (!this.map) return;
         
         let currentMapStyle: string | null = null;
         
-        // Trouver le tile layer actuel pour obtenir son URL
         this.map.eachLayer((layer) => {
             if (layer instanceof Leaflet.TileLayer) {
-                // @ts-ignore - Accéder à la propriété privée _url
+                // @ts-ignore - private property
                 currentMapStyle = layer._url || null;
             }
         });
@@ -1535,16 +1656,14 @@ class RandomChooserMap {
     private updateMapStyle(newStyleUrl: string) {
         if (!this.map) return;
 
-        // Remove existing tile layer
         this.map.eachLayer((layer) => {
             if (layer instanceof Leaflet.TileLayer) {
                 this.map?.removeLayer(layer);
             }
         });
 
-        // Add new tile layer
         Leaflet.tileLayer(newStyleUrl, {
-            attribution: '© OpenStreetMap contributors'
+            attribution: "© OpenStreetMap contributors"
         }).addTo(this.map);
     }
 
@@ -1668,11 +1787,32 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
 
-            const exportObject = {
-                restaurants: settings.restaurants || [],
-                originPosition: settings.originPosition || null,
-                exportDate: new Date().toISOString(),
-                version: "1.0"
+            const origin = settings.originPosition || (this.currentOriginPosition ? { lat: this.currentOriginPosition.lat, lng: this.currentOriginPosition.lng } : null);
+            const zoom = this.map ? this.map.getZoom() : (this.options.view?.zoom ?? null);
+            const mapStyle = settings.mapStyle || this.options.view?.mapStyle || null;
+            const language = (this.options as any)?.language || null;
+
+            const defaultRestaurants = (settings.restaurants || []).map(r => {
+                const base: any = {
+                    name: r.name,
+                    location: { lat: r.location.lat, long: r.location.long }
+                };
+                if (r.weight !== undefined) {
+                    base.weight = r.weight;
+                }
+                if (r.address && String(r.address).trim() !== "") {
+                    base.address = r.address;
+                }
+                return base;
+            });
+
+            const exportObject: any = {
+                initialLat: origin ? origin.lat : (this.options.view?.origin ? this.options.view.origin.lat : null),
+                initialLng: origin ? origin.lng : (this.options.view?.origin ? this.options.view.origin.lon : null),
+                initialZoom: zoom,
+                language: language,
+                mapStyle: mapStyle,
+                defaultRestaurants: defaultRestaurants,
             };
 
             const dataStr = JSON.stringify(exportObject, null, 2);
@@ -1680,7 +1820,7 @@ class RandomChooserMap {
 
             const link = document.createElement("a");
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `restaurants-data-${new Date().toISOString().split("T")[0]}.json`;
+            link.download = `exported-config-${new Date().toISOString().split("T")[0]}.json`;
 
             document.body.appendChild(link);
             link.click();
@@ -1689,7 +1829,8 @@ class RandomChooserMap {
 
             alert(this.options.text?.exportSuccess ?? "Data exported successfully!");
 
-        } catch (error) {
+        } 
+        catch (error) {
             console.error("Export error:", error);
             alert("Error during export");
         }
@@ -1818,18 +1959,29 @@ class RandomChooserMap {
                         }
 
                         const newSettings: Partial<AppSettings> = {};
-                        
-                        if (importedData.restaurants) {
-                            newSettings.restaurants = importedData.restaurants;
+
+                        const restaurantsSource = importedData.defaultRestaurants;
+                        if (restaurantsSource) {
+                            newSettings.restaurants = restaurantsSource.map((r: any) => ({
+                                name: r.name,
+                                address: r.address || "",
+                                location: { lat: r.location.lat, long: r.location.long },
+                                weight: r.weight !== undefined ? r.weight : 1
+                            }));
                         }
-                        if (importedData.originPosition) {
-                            newSettings.originPosition = importedData.originPosition;
-                            
-                            this.currentOriginPosition = Leaflet.latLng(importedData.originPosition.lat, importedData.originPosition.lng);
+
+                        // initial position in config format
+                        if (importedData.initialLat !== undefined && importedData.initialLng !== undefined) {
+                            newSettings.originPosition = { lat: importedData.initialLat, lng: importedData.initialLng };
+                            this.currentOriginPosition = Leaflet.latLng(importedData.initialLat, importedData.initialLng);
                             if (this.originMarker) {
                                 this.originMarker.setLatLng(this.currentOriginPosition);
                                 this.map?.setView(this.currentOriginPosition, this.map.getZoom());
                             }
+                        }
+
+                        if (importedData.mapStyle) {
+                            newSettings.mapStyle = importedData.mapStyle;
                         }
 
                         this.updateSettings(newSettings);
@@ -1860,9 +2012,9 @@ class RandomChooserMap {
 
     private validateImportData(data: any): boolean {
         if (!data || typeof data !== "object") return false;
-
-        if (data.restaurants && Array.isArray(data.restaurants)) {
-            for (const restaurant of data.restaurants) {
+        const restaurantsArray = data.defaultRestaurants;
+        if (restaurantsArray && Array.isArray(restaurantsArray)) {
+            for (const restaurant of restaurantsArray) {
                 if (!restaurant.name || !restaurant.location || 
                     typeof restaurant.location.lat !== "number" ||
                     typeof restaurant.location.long !== "number") {
