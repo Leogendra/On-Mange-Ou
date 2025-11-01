@@ -1518,11 +1518,11 @@ class RandomChooserMap {
 
         const cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
-        cancelBtn.textContent = "Cancel";
+        cancelBtn.textContent = this.options.text?.mapStyleCancel ?? "Cancel";
 
         const saveBtn = document.createElement("button");
         saveBtn.type = "submit";
-        saveBtn.textContent = "Apply";
+        saveBtn.textContent = this.options.text?.mapStyleSave ?? "Apply";
 
         buttonsDiv.appendChild(cancelBtn);
         buttonsDiv.appendChild(saveBtn);
