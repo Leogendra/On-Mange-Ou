@@ -1960,15 +1960,13 @@ class RandomChooserMap {
 
                         const newSettings: Partial<AppSettings> = {};
 
-                        // Support both legacy export (restaurants) and config-format (defaultRestaurants)
-                        const restaurantsSource = importedData.defaultRestaurants || importedData.restaurants;
+                        const restaurantsSource = importedData.defaultRestaurants;
                         if (restaurantsSource) {
-                            // Normalize restaurants to the settings shape
                             newSettings.restaurants = restaurantsSource.map((r: any) => ({
                                 name: r.name,
                                 address: r.address || "",
                                 location: { lat: r.location.lat, long: r.location.long },
-                                weight: r.weight !== undefined ? r.weight : (r.w !== undefined ? r.w : 1)
+                                weight: r.weight !== undefined ? r.weight : 1
                             }));
                         }
 
@@ -2014,7 +2012,7 @@ class RandomChooserMap {
 
     private validateImportData(data: any): boolean {
         if (!data || typeof data !== "object") return false;
-        const restaurantsArray = data.restaurants || data.defaultRestaurants;
+        const restaurantsArray = data.defaultRestaurants;
         if (restaurantsArray && Array.isArray(restaurantsArray)) {
             for (const restaurant of restaurantsArray) {
                 if (!restaurant.name || !restaurant.location || 
