@@ -343,7 +343,7 @@ class RandomChooserMap {
         resetWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.resetWeights();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const resetRestaurantsOption = document.createElement("button");
@@ -352,7 +352,7 @@ class RandomChooserMap {
         resetRestaurantsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.resetToDefaultRestaurants();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const exportDataOption = document.createElement("button");
@@ -361,7 +361,7 @@ class RandomChooserMap {
         exportDataOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.exportData();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const importDataOption = document.createElement("button");
@@ -370,7 +370,7 @@ class RandomChooserMap {
         importDataOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.importData();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const editWeightsOption = document.createElement("button");
@@ -379,7 +379,7 @@ class RandomChooserMap {
         editWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showEditWeightsDialog();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const toggleWeightsOption = document.createElement("button");
@@ -391,7 +391,7 @@ class RandomChooserMap {
         toggleWeightsOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.toggleWeights();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const changeMapStyleOption = document.createElement("button");
@@ -400,7 +400,7 @@ class RandomChooserMap {
         changeMapStyleOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showMapStyleDialog();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
     const chooseConfigOption = document.createElement("button");
@@ -409,7 +409,7 @@ class RandomChooserMap {
         chooseConfigOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showConfigSelectorDialog();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         const exportUrlOption = document.createElement("button");
@@ -418,7 +418,7 @@ class RandomChooserMap {
         exportUrlOption.addEventListener("click", (e) => {
             e.stopPropagation();
             this.exportViaUrl();
-            document.body.removeChild(menu);
+            removeMenuAndCleanup();
         });
 
         menu.appendChild(exportDataOption);
@@ -446,13 +446,27 @@ class RandomChooserMap {
             e.stopPropagation();
         });
 
-        const closeMenu = (e: MouseEvent) => {
-            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
-                document.body.removeChild(menu);
+        let closeMenu: ((e: MouseEvent) => void) | null = null;
+        const removeMenuAndCleanup = () => {
+            try {
+                if (menu.parentNode) {
+                    document.body.removeChild(menu);
+                }
+            } catch (err) {
+                // ignore
+            }
+            if (closeMenu) {
                 document.removeEventListener("click", closeMenu);
+                closeMenu = null;
             }
         };
-        setTimeout(() => document.addEventListener("click", closeMenu), 0);
+
+        closeMenu = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node) && !button.contains(e.target as Node)) {
+                removeMenuAndCleanup();
+            }
+        };
+        setTimeout(() => document.addEventListener("click", closeMenu!), 0);
     }
 
 
