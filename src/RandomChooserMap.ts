@@ -80,6 +80,7 @@ type RandomChooserMapOptions = {
         mapClickCancel: string;
         formLocationClickToEdit: string;
         formLocationEditMode: string;
+        restaurantNameExists: string;
         settingsAction: string;
         exportData: string;
         importData: string;
@@ -205,7 +206,7 @@ class RandomChooserMap {
         for (let i = 0; i < visibleChoices.length * randomRollNumber + randomIndex + 1; i++) {
             this.unselectAll();
             this.selectChoice(visibleChoices[i % visibleChoices.length]);
-            await wait(this.alreadyRolled ? 30 : 100);
+            await wait(this.alreadyRolled ? 50 : 100);
         }
 
         this.controlCache.get(randomChoice)?.click();
@@ -692,7 +693,8 @@ class RandomChooserMap {
                 const currentWeight = restaurant.weight || 1;
                 if (restaurant.name === decrement.name) {
                     return { ...restaurant, weight: 0 };
-                } else {
+                } 
+                else {
                     return { ...restaurant, weight: currentWeight + 1 };
                 }
             }
@@ -700,6 +702,24 @@ class RandomChooserMap {
         });
 
         this.updateSettings({ restaurants: updatedRestaurants });
+        this.refreshWeightLabels();
+    }
+
+    private refreshWeightLabels() {
+        const settings = this.loadSettings();
+        const weightsEnabled = this.areWeightsEnabled();
+
+        for (const restaurant of settings.restaurants) {
+            const controlEntry = Array.from(this.controlCache.entries()).find(([choice]) => choice.name === restaurant.name);
+            if (!controlEntry) continue;
+
+            const control = controlEntry[1];
+            const weightEl = control.querySelector('.random-chooser-map-control-choice-weight') as HTMLElement | null;
+            if (!weightEl) continue;
+
+            weightEl.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${restaurant.weight ?? 1}`;
+            weightEl.style.display = weightsEnabled ? "block" : "none";
+        }
     }
 
 
@@ -1203,6 +1223,13 @@ class RandomChooserMap {
             location: { lat: lat, long: lng }
         };
 
+        const normalized = name.trim().toLowerCase();
+        const existsInChoices = this.choices.some(c => c.name.trim().toLowerCase() === normalized);
+        if (existsInChoices) {
+            alert(this.options.text?.restaurantNameExists ?? "A restaurant with this name already exists. Please choose another name.");
+            return;
+        }
+
         this.choices.push(newRestaurant);
 
         if (this.options.style?.randomMarker) {
@@ -1224,13 +1251,34 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
             if (settings.restaurants && settings.restaurants.length > 0) {
-                return settings.restaurants.map((r: any) => ({
-                    name: r.name,
-                    address: r.address || "",
-                    location: { lat: r.location.lat, long: r.location.long }
-                }));
+                const seen = new Set<string>();
+                const results: RandomChoices = [];
+                for (const r of settings.restaurants) {
+                    if (!r || !r.name) { continue; }
+                    
+                    const normalized = String(r.name).trim().toLowerCase();
+                    if (!normalized) { continue; }
+
+                    if (seen.has(normalized)) {
+                        console.warn(`Duplicate restaurant name in saved settings skipped: ${r.name}`);
+                        continue;
+                    }
+                    seen.add(normalized);
+                    
+                    if (!r.location || typeof r.location.lat !== 'number' || typeof r.location.long !== 'number') {
+                        console.warn(`Invalid location in saved settings for '${r.name}', skipping`);
+                        continue;
+                    }
+                    results.push({
+                        name: r.name,
+                        address: r.address || "",
+                        location: { lat: r.location.lat, long: r.location.long }
+                    });
+                }
+                if (results.length > 0) return results;
             }
-        } catch (error) {
+        } 
+        catch (error) {
             console.warn(`Error while loading restaurants from settings: ${error}`);
         }
 
