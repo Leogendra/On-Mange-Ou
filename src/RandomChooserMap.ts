@@ -80,6 +80,7 @@ type RandomChooserMapOptions = {
         mapClickCancel: string;
         formLocationClickToEdit: string;
         formLocationEditMode: string;
+        restaurantNameExists: string;
         settingsAction: string;
         exportData: string;
         importData: string;
@@ -1222,6 +1223,13 @@ class RandomChooserMap {
             location: { lat: lat, long: lng }
         };
 
+        const normalized = name.trim().toLowerCase();
+        const existsInChoices = this.choices.some(c => c.name.trim().toLowerCase() === normalized);
+        if (existsInChoices) {
+            alert(this.options.text?.restaurantNameExists ?? "A restaurant with this name already exists. Please choose another name.");
+            return;
+        }
+
         this.choices.push(newRestaurant);
 
         if (this.options.style?.randomMarker) {
@@ -1243,13 +1251,34 @@ class RandomChooserMap {
         try {
             const settings = this.loadSettings();
             if (settings.restaurants && settings.restaurants.length > 0) {
-                return settings.restaurants.map((r: any) => ({
-                    name: r.name,
-                    address: r.address || "",
-                    location: { lat: r.location.lat, long: r.location.long }
-                }));
+                const seen = new Set<string>();
+                const results: RandomChoices = [];
+                for (const r of settings.restaurants) {
+                    if (!r || !r.name) { continue; }
+                    
+                    const normalized = String(r.name).trim().toLowerCase();
+                    if (!normalized) { continue; }
+
+                    if (seen.has(normalized)) {
+                        console.warn(`Duplicate restaurant name in saved settings skipped: ${r.name}`);
+                        continue;
+                    }
+                    seen.add(normalized);
+                    
+                    if (!r.location || typeof r.location.lat !== 'number' || typeof r.location.long !== 'number') {
+                        console.warn(`Invalid location in saved settings for '${r.name}', skipping`);
+                        continue;
+                    }
+                    results.push({
+                        name: r.name,
+                        address: r.address || "",
+                        location: { lat: r.location.lat, long: r.location.long }
+                    });
+                }
+                if (results.length > 0) return results;
             }
-        } catch (error) {
+        } 
+        catch (error) {
             console.warn(`Error while loading restaurants from settings: ${error}`);
         }
 
