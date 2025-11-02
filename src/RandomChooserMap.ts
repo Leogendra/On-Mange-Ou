@@ -205,7 +205,7 @@ class RandomChooserMap {
         for (let i = 0; i < visibleChoices.length * randomRollNumber + randomIndex + 1; i++) {
             this.unselectAll();
             this.selectChoice(visibleChoices[i % visibleChoices.length]);
-            await wait(this.alreadyRolled ? 30 : 100);
+            await wait(this.alreadyRolled ? 50 : 100);
         }
 
         this.controlCache.get(randomChoice)?.click();
@@ -692,7 +692,8 @@ class RandomChooserMap {
                 const currentWeight = restaurant.weight || 1;
                 if (restaurant.name === decrement.name) {
                     return { ...restaurant, weight: 0 };
-                } else {
+                } 
+                else {
                     return { ...restaurant, weight: currentWeight + 1 };
                 }
             }
@@ -700,6 +701,24 @@ class RandomChooserMap {
         });
 
         this.updateSettings({ restaurants: updatedRestaurants });
+        this.refreshWeightLabels();
+    }
+
+    private refreshWeightLabels() {
+        const settings = this.loadSettings();
+        const weightsEnabled = this.areWeightsEnabled();
+
+        for (const restaurant of settings.restaurants) {
+            const controlEntry = Array.from(this.controlCache.entries()).find(([choice]) => choice.name === restaurant.name);
+            if (!controlEntry) continue;
+
+            const control = controlEntry[1];
+            const weightEl = control.querySelector('.random-chooser-map-control-choice-weight') as HTMLElement | null;
+            if (!weightEl) continue;
+
+            weightEl.innerText = `${this.options.text?.weightLabel ?? "Weight:"} ${restaurant.weight ?? 1}`;
+            weightEl.style.display = weightsEnabled ? "block" : "none";
+        }
     }
 
 
