@@ -31,6 +31,7 @@
     "mapClickCancel": "Cancel",
     "formLocationClickToEdit": "Click here to select on the map",
     "formLocationEditMode": "Click on the map to choose the location",
+    "restaurantNameExists": "A restaurant with this name already exists. Please choose another name.",
     "settingsAction": "Settings",
     "exportData": "📤 Export data",
     "importData": "📥 Import data",
