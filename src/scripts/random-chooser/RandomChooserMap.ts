@@ -1,138 +1,17 @@
+import { loadSettings as _loadSettings, saveSettings as _saveSettings, updateSettings as _updateSettings, areWeightsEnabled as _areWeightsEnabled, toggleWeights as _toggleWeights, saveRestaurantsToStorageInternal as _saveRestaurantsToStorageInternal } from "./settings";
+import { recoverSavedWeights as _recoverSavedWeights, updateWeight as _updateWeight } from "./weights";
+import { buildAddRestaurantDialog, buildEditWeightsDialog, buildMapStyleDialog } from "./dialogs";
+import { RandomChoice, AppSettings, RandomChoices, RandomChooserMapOptions, wait } from "./types";
+import { WeightedSet, random as weightedRandom } from "../utils/weighted-random";
+import { STORAGE_KEY_SETTINGS } from "./constants";
+import { Location } from "../utils/location";
 import Leaflet from "leaflet";
-import { Location } from "./utils/location";
-import { WeightedSet, random as weightedRandom } from "./utils/weighted-random";
 
 
-
-
-export interface RandomChoice {
-    name: string;
-    address: string;
-    location: {
-        lat: number;
-        long: number;
-    };
-}
-
-
-interface AppSettings {
-    restaurants: Array<{
-        name: string;
-        address: string;
-        location: {
-            lat: number;
-            long: number;
-        };
-        weight?: number;
-    }>;
-    weightsEnabled?: boolean;
-    mapStyle?: string;
-    originPosition?: {
-        lat: number;
-        lng: number;
-    };
-    version: string;
-}
-
-
-type RandomChoices = Array<RandomChoice>;
-
-
-type RandomChooserMapOptions = {
-    view?: {
-        origin?: Location;
-        zoom?: number;
-        mapStyle?: string;
-    };
-    style?: {
-        markerSize?: number;
-        originMarker?: string;
-        randomMarker?: string;
-    };
-    text?: {
-        rollAction: string;
-        resetAction: string;
-        resetWeights: string;
-        hintRestaurants?: string
-        weightDescription: string;
-        weightResetConfirmation: string;
-        noRestaurant: string;
-        noVisibleRestaurant: string;
-        formAddRestaurant: string;
-        formRestaurantName: string;
-        formRestaurantAddress: string;
-        formRestaurantLocation: string;
-        formRestaurantLocationInfo: string;
-        formRestaurantLocationSelected: string;
-        formRestaurantWeight: string;
-        formAddButton: string;
-        formCancelButton: string;
-        addRestaurantTooltip: string;
-        deleteRestaurantTooltip: string;
-        hideRestaurantTooltip: string;
-        showRestaurantTooltip: string;
-        deleteRestaurantConfirmation: string;
-        resetWeightsConfirmation: string;
-        weightLabel: string;
-        mapClickChoiceTitle: string;
-        mapClickAddRestaurant: string;
-        mapClickMoveOrigin: string;
-        mapClickCancel: string;
-        formLocationClickToEdit: string;
-        formLocationEditMode: string;
-        restaurantNameExists: string;
-        settingsAction: string;
-        exportData: string;
-        importData: string;
-        exportSuccess: string;
-        importSuccess: string;
-        importError: string;
-        formLocationCoordinates: string;
-        formLocationCoordinatesPlaceholder: string;
-        coordinatesInvalidFormat: string;
-        editWeights: string;
-        editWeightsTitle: string;
-        editWeightsSave: string;
-        editWeightsCancel: string;
-        toggleWeights: string;
-        weightsEnabled: string;
-        weightsDisabled: string;
-        exportUrl: string;
-        urlExportSuccess: string;
-        collapseRestaurants: string;
-        expandRestaurants: string;
-        collapseText: string;
-        expandText: string;
-        loadCustomConfig: string;
-        customConfigTitle: string;
-        changeMapStyle: string;
-        mapStyleTitle: string;
-        mapStyleSave: string;
-        mapStyleCancel: string;
-        mapStyleDefault: string;
-        mapStyleBzr: string;
-        mapStyleCartocdnLight: string;
-        mapStyleCartocdnDark: string;
-        mapStyleOpentopomap: string;
-        mapStyleCustom: string;
-        resetConfiguration: string;
-        resetConfigurationConfirmation: string;
-    };
-    availableConfigs?: string[];
-    selectedConfig?: string;
-    language?: string;
-};
-
-
-function wait(timeout: number): Promise<void> {
-    return new Promise((success, _) => {
-        setInterval(success, timeout);
-    });
-}
 
 
 class RandomChooserMap {
-    private static readonly SETTINGS_STORAGE_KEY = "settings";
+    private static readonly SETTINGS_STORAGE_KEY = STORAGE_KEY_SETTINGS;
 
     private choices: RandomChoices;
     private defaultChoices: RandomChoices;
@@ -279,7 +158,6 @@ class RandomChooserMap {
         }).addTo(this.map!);
     }
 
-
     private addRandomChoiceMarkers() {
         if (this.options.style?.randomMarker !== undefined) {
             for (const choice of this.choices) {
@@ -293,7 +171,6 @@ class RandomChooserMap {
             }
         }
     }
-
 
     private addRollControl() {
         const button = document.createElement("button");
@@ -310,7 +187,6 @@ class RandomChooserMap {
         this.addControl(button, "bottomright");
     }
 
-
     private addSettigsControl() {
         const button = document.createElement("button");
 
@@ -324,7 +200,6 @@ class RandomChooserMap {
 
         this.addControl(button, "bottomleft");
     }
-
 
     private showSettingsMenu(button: HTMLElement) {
 
@@ -470,7 +345,6 @@ class RandomChooserMap {
         setTimeout(() => document.addEventListener("click", closeMenu!), 0);
     }
 
-
     private addHintRestaurantCard() {
         const buttonContainer = document.createElement("div");
         buttonContainer.classList.add("hint");
@@ -482,7 +356,6 @@ class RandomChooserMap {
         buttonContainer.appendChild(buttonTitle);
         return buttonContainer;
     }
-
 
     private addRandomChoiceControls() {
         const existing = document.getElementById("div-random-chooser-map-control");
@@ -581,7 +454,6 @@ class RandomChooserMap {
         this.addControl(divRestaurantContainer, "topright");
     }
 
-
     private addInteractions() {
         for (const [choice, control] of this.controlCache.entries()) {
             control.addEventListener("click", (e) => {
@@ -590,7 +462,6 @@ class RandomChooserMap {
             });
         }
     }
-
 
     private addMarker(
         location: Location,
@@ -613,7 +484,6 @@ class RandomChooserMap {
 
         return marker;
     }
-
 
     private addControl(
         element: HTMLElement,
@@ -645,7 +515,6 @@ class RandomChooserMap {
         document.body.appendChild(element);
     }
 
-
     private selectChoice(choice: number | RandomChoice) {
         if (Number.isInteger(choice)) {
             choice = this.choices[Number(choice)];
@@ -656,52 +525,20 @@ class RandomChooserMap {
             ?.classList.add("selected");
     }
 
-
     private unselectAll() {
         for (const control of this.controlCache.values()) {
             control.classList.remove("selected");
         }
     }
 
-
     private recoverSavedWeights(
         items: Set<RandomChoice>
     ): WeightedSet<RandomChoice> {
-        const weights: WeightedSet<RandomChoice> = new Set();
-        const settings = this.loadSettings();
-
-        for (const item of items) {
-            const savedRestaurant = settings.restaurants.find(r => r.name === item.name);
-            const weight = savedRestaurant?.weight || 1;
-            
-            weights.add({
-                value: item,
-                weight: weight
-            });
-        }
-
-        return weights;
+        return _recoverSavedWeights(items);
     }
 
-
     private updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) {
-        const settings = this.loadSettings();
-        const updatedRestaurants = settings.restaurants.map(restaurant => {
-            const isTargetRestaurant = Array.from(items).some(item => item.name === restaurant.name);
-            
-            if (isTargetRestaurant) {
-                const currentWeight = restaurant.weight || 1;
-                if (restaurant.name === decrement.name) {
-                    return { ...restaurant, weight: 0 };
-                } 
-                else {
-                    return { ...restaurant, weight: currentWeight + 1 };
-                }
-            }
-            return restaurant;
-        });
-
-        this.updateSettings({ restaurants: updatedRestaurants });
+        _updateWeight(items, decrement);
         this.refreshWeightLabels();
     }
 
@@ -722,7 +559,6 @@ class RandomChooserMap {
         }
     }
 
-
     private resetWeights() {
         const confirmMessage = this.options.text?.resetWeightsConfirmation ?? "Are you sure you want to reset all restaurant weights?";
         if (confirm(confirmMessage)) {
@@ -734,7 +570,6 @@ class RandomChooserMap {
             this.updateSettings({ restaurants: updatedRestaurants });
         }
     }
-
 
     private resetToDefaultRestaurants() {
         const confirmMessage = this.options.text?.resetConfigurationConfirmation ?? "Are you sure you want to reset configuration to defaults? This will remove all local settings.";
@@ -749,7 +584,6 @@ class RandomChooserMap {
             window.location.reload();
         }
     }
-
 
     private deleteRestaurant(choice: RandomChoice) {
         const index = this.choices.indexOf(choice);
@@ -769,7 +603,6 @@ class RandomChooserMap {
         this.addInteractions();
         this.saveRestaurantsToStorage();
     }
-
 
     private toggleRestaurantVisibility(choice: RandomChoice) {
         if (this.hiddenRestaurants.has(choice)) {
@@ -830,112 +663,10 @@ class RandomChooserMap {
     }
 
     private createAddRestaurantDialog() {
-        this.addRestaurantDialog = document.createElement("dialog");
-        this.addRestaurantDialog.id = "add-restaurant-dialog";
-
-        const form = document.createElement("form");
-        form.method = "dialog";
-
-        const title = document.createElement("h2");
-        title.textContent = this.options.text?.formAddRestaurant ?? "Add a restaurant";
-
-        const nameGroup = document.createElement("div");
-        nameGroup.className = "form-group";
-        
-        const nameLabel = document.createElement("label");
-        nameLabel.htmlFor = "restaurant-name";
-        nameLabel.textContent = this.options.text?.formRestaurantName ?? "Restaurant name:";
-        
-        const nameInput = document.createElement("input");
-        nameInput.type = "text";
-        nameInput.id = "restaurant-name";
-        nameInput.name = "restaurant-name";
-        nameInput.required = true;
-
-        nameGroup.appendChild(nameLabel);
-        nameGroup.appendChild(nameInput);
-
-        const addressGroup = document.createElement("div");
-        addressGroup.className = "form-group";
-        
-        const addressLabel = document.createElement("label");
-        addressLabel.htmlFor = "restaurant-address";
-        addressLabel.textContent = this.options.text?.formRestaurantAddress ?? "Address:";
-        
-        const addressInput = document.createElement("input");
-        addressInput.type = "text";
-        addressInput.id = "restaurant-address";
-        addressInput.name = "restaurant-address";
-        addressInput.required = false;
-
-        addressGroup.appendChild(addressLabel);
-        addressGroup.appendChild(addressInput);
-
-        const locationGroup = document.createElement("div");
-        locationGroup.className = "form-group";
-        
-        const locationLabel = document.createElement("label");
-        locationLabel.textContent = this.options.text?.formLocationCoordinates ?? "Coordinates:";
-
-        const locationInfo = document.createElement("p");
-        locationInfo.id = "location-info";
-        locationInfo.textContent = this.options.text?.formLocationClickToEdit ?? "Click here to select on the map";
-        locationInfo.style.cursor = "pointer";
-        locationInfo.style.padding = "0.8rem";
-        locationInfo.style.backgroundColor = "#f8f9fa";
-        locationInfo.style.border = "2px dashed #ddd";
-        locationInfo.style.borderRadius = "0.5rem";
-        locationInfo.style.textAlign = "center";
-        locationInfo.style.transition = "all 0.3s ease";
-
-        locationInfo.addEventListener("click", () => {
-            this.setupLocationInput();
-        });
-
-        const latInput = document.createElement("input");
-        latInput.type = "hidden";
-        latInput.id = "restaurant-lat";
-        latInput.name = "restaurant-lat";
-
-        const lngInput = document.createElement("input");
-        lngInput.type = "hidden";
-        lngInput.id = "restaurant-lng";
-        lngInput.name = "restaurant-lng";
-
-        locationGroup.appendChild(locationLabel);
-        locationGroup.appendChild(locationInfo);
-        locationGroup.appendChild(latInput);
-        locationGroup.appendChild(lngInput);
-
-        const buttonsDiv = document.createElement("div");
-        buttonsDiv.className = "dialog-buttons";
-        
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.id = "cancel-add";
-        cancelBtn.textContent = this.options.text?.formCancelButton ?? "Cancel";
-        
-        const confirmBtn = document.createElement("button");
-        confirmBtn.type = "submit";
-        confirmBtn.id = "confirm-add";
-        confirmBtn.textContent = this.options.text?.formAddButton ?? "Add";
-        confirmBtn.disabled = true;
-
-        buttonsDiv.appendChild(cancelBtn);
-        buttonsDiv.appendChild(confirmBtn);
-
-        form.appendChild(title);
-        form.appendChild(nameGroup);
-        form.appendChild(addressGroup);
-        form.appendChild(locationGroup);
-        form.appendChild(buttonsDiv);
-
-        this.addRestaurantDialog.appendChild(form);
-
+        this.addRestaurantDialog = buildAddRestaurantDialog(this.options.text);
         document.body.appendChild(this.addRestaurantDialog);
         this.setupDialogEvents();
     }
-
 
     private setupLocationInput() {
         if (!this.addRestaurantDialog) return;
@@ -1030,7 +761,6 @@ class RandomChooserMap {
         });
     }
 
-
     private setupDialogEvents() {
         if (!this.addRestaurantDialog) return;
 
@@ -1085,14 +815,12 @@ class RandomChooserMap {
         addressInput?.addEventListener("input", validateForm);
     }
 
-
     private cancelLocationSelection() {
         if (this.tempMarker) {
             this.map?.removeLayer(this.tempMarker);
             this.tempMarker = null;
         }
     }
-
 
     private validateRestaurantForm(): boolean {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
@@ -1103,7 +831,6 @@ class RandomChooserMap {
             latInput?.value !== "" &&
             lngInput?.value !== "";
     }
-
 
     private validateAndSetCoordinates(coordinatesStr: string): boolean {
         if (!coordinatesStr.trim() || !this.addRestaurantDialog) {
@@ -1164,7 +891,6 @@ class RandomChooserMap {
         return false;
     }
 
-
     private resetForm() {
         const nameInput = this.addRestaurantDialog?.querySelector("#restaurant-name") as HTMLInputElement;
         const addressInput = this.addRestaurantDialog?.querySelector("#restaurant-address") as HTMLInputElement;
@@ -1215,7 +941,6 @@ class RandomChooserMap {
         }
     }
 
-
     private addNewRestaurant(name: string, address: string, lat: number, lng: number) {
         const newRestaurant: RandomChoice = {
             name: name,
@@ -1245,7 +970,6 @@ class RandomChooserMap {
         this.addInteractions();
         this.saveRestaurantsToStorage();
     }
-
 
     private loadRestaurantsFromStorage(defaultChoices: RandomChoices): RandomChoices {
         try {
@@ -1286,68 +1010,21 @@ class RandomChooserMap {
         return [...defaultChoices];
     }
 
-
     private saveRestaurantsToStorage() {
         this.saveRestaurantsToStorageInternal(this.choices);
     }
 
-
     private saveRestaurantsToStorageInternal(choices: RandomChoices) {
-        const settings = this.loadSettings();
-        const restaurantsData = choices.map(choice => {
-            const existingRestaurant = settings.restaurants.find(r => r.name === choice.name);
-            return {
-                name: choice.name,
-                address: choice.address || "",
-                location: {
-                    lat: choice.location.lat,
-                    long: choice.location.long
-                },
-                weight: existingRestaurant?.weight || 1
-            };
-        });
-        this.updateSettings({ restaurants: restaurantsData });
+        // delegate to settings helper which handles localStorage and merging
+        _saveRestaurantsToStorageInternal(choices);
     }
 
-
     private createEditWeightsDialog() {
-    this.editWeightsDialog = document.createElement("dialog");
-    this.editWeightsDialog.id = "edit-weights-dialog";
-    this.editWeightsDialog.className = "dialog-menu";
-
-        const form = document.createElement("form");
-        form.method = "dialog";
-
-        const title = document.createElement("h2");
-        title.textContent = this.options.text?.editWeightsTitle ?? "Edit restaurant weights";
-
-        const weightsContainer = document.createElement("div");
-        weightsContainer.className = "weights-container";
-
-        const buttonsDiv = document.createElement("div");
-        buttonsDiv.className = "dialog-buttons";
-        
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.id = "cancel-edit-weights";
-        cancelBtn.textContent = this.options.text?.editWeightsCancel ?? "Cancel";
-        
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "submit";
-        saveBtn.id = "save-edit-weights";
-        saveBtn.textContent = this.options.text?.editWeightsSave ?? "Save";
-
-        buttonsDiv.appendChild(cancelBtn);
-        buttonsDiv.appendChild(saveBtn);
-
-        form.appendChild(title);
-        form.appendChild(weightsContainer);
-        form.appendChild(buttonsDiv);
-
-        this.editWeightsDialog.appendChild(form);
+        this.editWeightsDialog = buildEditWeightsDialog(this.options.text);
         document.body.appendChild(this.editWeightsDialog);
 
-        cancelBtn.addEventListener("click", () => {
+        const cancelBtn = this.editWeightsDialog.querySelector("#cancel-edit-weights") as HTMLButtonElement | null;
+        cancelBtn?.addEventListener("click", () => {
             this.editWeightsDialog?.close();
         });
 
@@ -1357,7 +1034,8 @@ class RandomChooserMap {
             }
         });
 
-        form.addEventListener("submit", (e) => {
+        const form = this.editWeightsDialog.querySelector("form") as HTMLFormElement | null;
+        form?.addEventListener("submit", (e) => {
             e.preventDefault();
             this.saveWeightsFromDialog();
             this.editWeightsDialog?.close();
@@ -1365,20 +1043,9 @@ class RandomChooserMap {
     }
 
     private createMapStyleDialog() {
-    this.mapStyleDialog = document.createElement("dialog");
-    this.mapStyleDialog.id = "map-style-dialog";
-    this.mapStyleDialog.className = "dialog-menu";
+        const currentSettings = this.loadSettings();
+        const currentMapStyle = currentSettings.mapStyle || this.options.view?.mapStyle || "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png";
 
-        const form = document.createElement("form");
-        form.method = "dialog";
-
-        const title = document.createElement("h2");
-        title.textContent = this.options.text?.mapStyleTitle ?? "Map style";
-
-        const stylesContainer = document.createElement("div");
-        stylesContainer.className = "map-styles-container";
-
-        // Predefined map styles
         const mapStyles = [
             { name: this.options.text?.mapStyleDefault ?? "OpenStreetMap default", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
             { name: this.options.text?.mapStyleBzr ?? "OpenStreetMap clean", url: "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png" },
@@ -1387,126 +1054,60 @@ class RandomChooserMap {
             { name: this.options.text?.mapStyleOpentopomap ?? "Relief map", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
         ];
 
-        const currentSettings = this.loadSettings();
-        const currentMapStyle = currentSettings.mapStyle || "https://tile.openstreetmap.bzh/br/{z}/{x}/{y}.png";
-
-        mapStyles.forEach(style => {
-            const styleOption = document.createElement("div");
-            styleOption.className = "map-style-option";
-
-            const radio = document.createElement("input");
-            radio.type = "radio";
-            radio.name = "mapStyle";
-            radio.value = style.url;
-            radio.id = `style-${style.name.replace(/\s+/g, '-').toLowerCase()}`;
-            radio.checked = style.url === currentMapStyle;
-
-            const label = document.createElement("label");
-            label.htmlFor = radio.id;
-            label.textContent = style.name;
-
-            styleOption.appendChild(radio);
-            styleOption.appendChild(label);
-            stylesContainer.appendChild(styleOption);
-        });
-
-        // Custom URL option
-        const customOption = document.createElement("div");
-        customOption.className = "map-style-option";
-
-        const customRadio = document.createElement("input");
-        customRadio.type = "radio";
-        customRadio.name = "mapStyle";
-        customRadio.value = "custom";
-        customRadio.id = "style-custom";
-        
-        const customLabel = document.createElement("label");
-        customLabel.htmlFor = "style-custom";
-        customLabel.textContent = this.options.text?.mapStyleCustom ?? "Custom URL";
-
-        const customInput = document.createElement("input");
-        customInput.type = "text";
-        customInput.id = "custom-map-url";
-        customInput.placeholder = "https://example.com/{z}/{x}/{y}.png";
-        customInput.className = "custom-url-input";
-        
-        // Check if current style is custom (not in predefined list)
-        const isCustom = !mapStyles.some(style => style.url === currentMapStyle);
-        if (isCustom) {
-            customRadio.checked = true;
-            customInput.value = currentMapStyle;
-        }
-
-        customOption.appendChild(customRadio);
-        customOption.appendChild(customLabel);
-        customOption.appendChild(customInput);
-        stylesContainer.appendChild(customOption);
-
-        const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
-        radioButtons.forEach(radio => {
-            radio.addEventListener("change", () => {
-                customInput.disabled = radio.value !== "custom";
-                
-                let newMapStyle: string;
-                if (radio.value === "custom") {
-                    if (customInput.value.trim()) {
-                        newMapStyle = customInput.value.trim();
-                    }
-                    else { 
-                        return; 
-                    }
-                } 
-                else {
-                    newMapStyle = radio.value;
-                }
-                this.updateMapStyle(newMapStyle);
-            });
-        });
-        
-        customInput.addEventListener("input", () => {
-            if (customRadio.checked && customInput.value.trim()) {
-                this.updateMapStyle(customInput.value.trim());
-            }
-        });
-        
-        customInput.disabled = !customRadio.checked;
-
-        const buttonsDiv = document.createElement("div");
-        buttonsDiv.className = "dialog-buttons";
-        
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.textContent = this.options.text?.mapStyleCancel ?? "Cancel";
-        
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "submit";
-        saveBtn.textContent = this.options.text?.mapStyleSave ?? "Apply";
-
-        buttonsDiv.appendChild(cancelBtn);
-        buttonsDiv.appendChild(saveBtn);
-
-        form.appendChild(title);
-        form.appendChild(stylesContainer);
-        form.appendChild(buttonsDiv);
-
-        this.mapStyleDialog.appendChild(form);
+        this.mapStyleDialog = buildMapStyleDialog(this.options.text, currentMapStyle, mapStyles);
         document.body.appendChild(this.mapStyleDialog);
 
-        cancelBtn.addEventListener("click", () => {
+        const stylesContainer = this.mapStyleDialog.querySelector('.map-styles-container') as HTMLElement | null;
+        const customInput = this.mapStyleDialog.querySelector('#custom-map-url') as HTMLInputElement | null;
+        const customRadio = this.mapStyleDialog.querySelector('#style-custom') as HTMLInputElement | null;
+
+        if (stylesContainer) {
+            const radioButtons = stylesContainer.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (customInput) customInput.disabled = radio.value !== 'custom';
+
+                    let newMapStyle: string;
+                    if (radio.value === 'custom') {
+                        if (customInput && customInput.value.trim()) {
+                            newMapStyle = customInput.value.trim();
+                        } else {
+                            return;
+                        }
+                    } else {
+                        newMapStyle = radio.value;
+                    }
+                    this.updateMapStyle(newMapStyle);
+                });
+            });
+        }
+
+        if (customInput) {
+            customInput.addEventListener('input', () => {
+                if (customRadio && customRadio.checked && customInput.value.trim()) {
+                    this.updateMapStyle(customInput.value.trim());
+                }
+            });
+            customInput.disabled = !(customRadio && customRadio.checked);
+        }
+
+        const cancelBtn = this.mapStyleDialog.querySelector('button[type="button"]') as HTMLButtonElement | null;
+        cancelBtn?.addEventListener('click', () => {
             if (this.originalMapStyle) {
                 this.updateMapStyle(this.originalMapStyle);
             }
             this.mapStyleDialog?.close();
         });
 
-        this.mapStyleDialog.addEventListener("click", (e) => {
+        this.mapStyleDialog.addEventListener('click', (e) => {
             if (e.target === this.mapStyleDialog) {
                 this.saveCurrentMapStyle();
                 this.mapStyleDialog?.close();
             }
         });
 
-        form.addEventListener("submit", (e) => {
+        const form = this.mapStyleDialog.querySelector('form') as HTMLFormElement | null;
+        form?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveCurrentMapStyle();
             this.mapStyleDialog?.close();
@@ -1615,7 +1216,6 @@ class RandomChooserMap {
         });
     }
 
-
     private showEditWeightsDialog() {
         if (!this.editWeightsDialog) return;
 
@@ -1652,7 +1252,6 @@ class RandomChooserMap {
 
         this.editWeightsDialog.showModal();
     }
-
 
     private saveWeightsFromDialog() {
         if (!this.editWeightsDialog) return;
@@ -1768,7 +1367,6 @@ class RandomChooserMap {
         });
     }
 
-
     private addMapClickHandler() {
         this.map?.on("click", (e: Leaflet.LeafletMouseEvent) => {
             const { lat, lng } = e.latlng;
@@ -1787,7 +1385,6 @@ class RandomChooserMap {
             this.actionChoiceDialog?.showModal();
         });
     }
-
 
     private openAddRestaurantDialogAtLocation() {
         if (!this.tempMarker || !this.addRestaurantDialog) return;
@@ -1811,7 +1408,6 @@ class RandomChooserMap {
         this.addRestaurantDialog.showModal();
     }
 
-
     private moveOriginToLocation() {
         if (!this.tempMarker) return;
 
@@ -1829,7 +1425,6 @@ class RandomChooserMap {
         this.map?.removeLayer(this.tempMarker);
         this.tempMarker = null;
     }
-
 
     private exportData() {
         try {
@@ -2057,7 +1652,6 @@ class RandomChooserMap {
         }
     }
 
-
     private validateImportData(data: any): boolean {
         if (!data || typeof data !== "object") return false;
         const restaurantsArray = data.defaultRestaurants;
@@ -2078,7 +1672,6 @@ class RandomChooserMap {
         return true;
     }
 
-
     private reloadWithImportedData() {
         for (const marker of this.markerCache.values()) {
             if (this.map) {
@@ -2095,55 +1688,27 @@ class RandomChooserMap {
         this.addInteractions();
     }
 
-
     private loadSettings(): AppSettings {
-        try {
-            const saved = localStorage.getItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
-            if (saved) {
-                return JSON.parse(saved);
-            }
-        } catch (error) {
-            console.warn(`Error loading settings from localStorage: ${error}`);
-            localStorage.removeItem(RandomChooserMap.SETTINGS_STORAGE_KEY);
-        }
-        
-        return {
-            restaurants: [],
-            version: "1.0"
-        };
+        return _loadSettings();
     }
-
 
     private saveSettings(settings: AppSettings) {
-        try {
-            localStorage.setItem(RandomChooserMap.SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-        } catch (error) {
-            console.error(`Error saving settings to localStorage: ${error}`);
-        }
+        _saveSettings(settings);
     }
-
 
     private updateSettings(updates: Partial<AppSettings>) {
-        const currentSettings = this.loadSettings();
-        const newSettings = { ...currentSettings, ...updates };
-        this.saveSettings(newSettings);
+        _updateSettings(updates);
     }
-
 
     private areWeightsEnabled(): boolean {
-        const settings = this.loadSettings();
-        return settings.weightsEnabled !== false;
+        return _areWeightsEnabled();
     }
 
-
     private toggleWeights() {
-        const currentState = this.areWeightsEnabled();
-        this.updateSettings({ weightsEnabled: !currentState });
-        
+        _toggleWeights();
         this.addRandomChoiceControls();
         this.addInteractions();
     }
-
 
     private loadOriginPosition(): Location | null {
         const settings = this.loadSettings();
@@ -2152,7 +1717,6 @@ class RandomChooserMap {
         }
         return null;
     }
-
 
     private saveOriginPosition() {
         if (this.currentOriginPosition) {
@@ -2165,8 +1729,6 @@ class RandomChooserMap {
         }
     }
 }
-
-
 
 
 export default RandomChooserMap;

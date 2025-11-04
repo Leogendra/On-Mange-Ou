@@ -1,10 +1,13 @@
-import "./style.css";
-import PERSON_ICON from "./assets/person.png";
-import RESTAURANT_ICON from "./assets/restaurant.png";
+import RandomChooserMap from "./scripts/random-chooser/RandomChooserMap";
+import createRestaurantsFromConfig from "./scripts/utils/restaurants";
+import { Location } from "./scripts/utils/location";
 
-import { Location } from "./utils/location";
-import createRestaurantsFromConfig from "./utils/restaurants";
-import RandomChooserMap from "./RandomChooserMap";
+import RESTAURANT_ICON from "./assets/restaurant.png";
+import PERSON_ICON from "./assets/person.png";
+import "./styles/main.css";
+import "./styles/controls.css";
+import "./styles/dialogs.css";
+
 
 async function init() {
     const configModules: Record<string, () => Promise<any>> = import.meta.glob("./data/config/*.json");
