@@ -1,7 +1,7 @@
 import { RandomChoice } from "./types";
 import { WeightedSet } from "../utils/weighted-random";
 import { loadSettings, updateSettings } from "./settings";
-
+import { NOT_SELECTED_WEIGHT_INCREMENT, SELECTED_WEIGHT_RESET } from "./constants";
 
 
 
@@ -26,9 +26,10 @@ export function updateWeight(items: Set<RandomChoice>, decrement: RandomChoice) 
         if (isTargetRestaurant) {
             const currentWeight = restaurant.weight || 1;
             if (restaurant.name === decrement.name) {
-                return { ...restaurant, weight: 0 };
-            } else {
-                return { ...restaurant, weight: currentWeight + 1 };
+                return { ...restaurant, weight: SELECTED_WEIGHT_RESET };
+            } 
+            else {
+                return { ...restaurant, weight: currentWeight + NOT_SELECTED_WEIGHT_INCREMENT };
             }
         }
         return restaurant;
