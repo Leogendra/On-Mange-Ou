@@ -1,6 +1,6 @@
-import RandomChooserMap from "./script/random-chooser/RandomChooserMap";
-import createRestaurantsFromConfig from "./script/utils/restaurants";
-import { Location } from "./script/utils/location";
+import RandomChooserMap from "./scripts/random-chooser/RandomChooserMap";
+import createRestaurantsFromConfig from "./scripts/utils/restaurants";
+import { Location } from "./scripts/utils/location";
 
 import RESTAURANT_ICON from "./assets/restaurant.png";
 import PERSON_ICON from "./assets/person.png";
