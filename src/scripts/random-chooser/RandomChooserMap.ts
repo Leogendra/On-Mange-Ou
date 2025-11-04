@@ -47,11 +47,11 @@ class RandomChooserMap {
     }
 
     public async roll() {
+        // avoid concurrent rolls
         if (this.lockRoll) { return; }
         this.lockRoll = true;
 
         const visibleChoices = this.choices.filter(choice => !this.hiddenRestaurants.has(choice));
-        
         if (visibleChoices.length === 0) {
             alert(this.options.text?.noVisibleRestaurant ?? "No visible restaurant for selection! Please make at least one restaurant visible.");
             return;
@@ -87,12 +87,21 @@ class RandomChooserMap {
             this.selectChoice(visibleChoices[i % visibleChoices.length]);
             await wait(this.alreadyRolled ? 50 : 100);
         }
-
-        this.controlCache.get(randomChoice)?.click();
-        
+                
         if (this.areWeightsEnabled()) {
             const choicesSet = new Set(visibleChoices);
             this.updateWeight(choicesSet, randomChoice);
+        }
+
+        // click the selected choice to open its popup
+        this.controlCache.get(randomChoice)?.click();
+
+        // move the view to center the selected choice
+        if (this.map) {
+            const selectedMarker = this.markerCache.get(randomChoice);
+            if (selectedMarker) {
+                this.map.setView(selectedMarker.getLatLng(), this.map.getZoom());
+            }
         }
 
         await wait(this.alreadyRolled ? 500 : 1000);
@@ -100,7 +109,8 @@ class RandomChooserMap {
         
         this.lockRoll = false;
 
-        if (this.alreadyRolled) { return; } // Let labels closed
+        // Let labels closed if re-roll
+        if (this.alreadyRolled) { return; } 
         this.alreadyRolled = true;
 
         for (let i = 0; i < allClosableElements.length; i++) {
@@ -582,7 +592,7 @@ class RandomChooserMap {
             catch (err) {
                 console.error("Error clearing settings from localStorage", err);
             }
-            
+
             // Reload the page so the selected/default config is loaded fresh
             window.location.reload();
         }
