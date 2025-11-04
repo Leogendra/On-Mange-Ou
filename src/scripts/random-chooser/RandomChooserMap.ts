@@ -568,6 +568,8 @@ class RandomChooserMap {
                 weight: 1
             }));
             this.updateSettings({ restaurants: updatedRestaurants });
+
+            this.refreshWeightLabels();
         }
     }
 
@@ -580,6 +582,7 @@ class RandomChooserMap {
             catch (err) {
                 console.error("Error clearing settings from localStorage", err);
             }
+            
             // Reload the page so the selected/default config is loaded fresh
             window.location.reload();
         }
