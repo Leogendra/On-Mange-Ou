@@ -8,21 +8,23 @@ The project is available at [https://on-mange-ou.gatienh.fr](https://on-mange-ou
 
 ## ✨ Features
 
+### Main features :
 - Interactive map
-- Restaurant list
-- Full random restaurant selection
-- Weighting of selection probability based on frequency
-- Update the restaurant list from a JSON file
+- Mobile-friendly UI
+- Restaurant list with name, address and weights
+- Random restaurant selection
+- Weighted restaurant selection
 - Add restaurants by clicking on the map
-- Add option to hide restaurants before rolling
-- Add toggle for weighted/random selection
-- Display weights on the restaurant list
-- Add option to reset weights
-- Add option to manually set weights
-- Export/import restaurant list via URL
+- Hide restaurants before rolling
 - Collapse restaurant list
-- Load and save configuration files
-- UI for mobile
+  
+### In settings: 
+- Toggle weighted/random selection
+- Reset all weights
+- Set weights manually
+- Import/export restaurant list from a JSON file
+- Import/export restaurant list via URL
+- Load and save predefined configuration files
 
 ## 🛠️ Development
 
