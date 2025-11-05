@@ -65,5 +65,6 @@
     "mapStyleCartocdnLight": "Light map",
     "mapStyleCartocdnDark": "Dark map",
     "mapStyleOpentopomap": "Relief map",
-    "mapStyleCustom": "Custom URL"
+    "mapStyleCustom": "Custom URL",
+    "about": "ℹ️ About"
 }
