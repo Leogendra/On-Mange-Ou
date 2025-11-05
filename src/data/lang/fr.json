@@ -65,5 +65,6 @@
     "mapStyleCartocdnLight": "Carte claire",
     "mapStyleCartocdnDark": "Carte sombre",
     "mapStyleOpentopomap": "Carte Relief",
-    "mapStyleCustom": "URL personnalisée"
+    "mapStyleCustom": "URL personnalisée",
+    "about": "ℹ️ À propos"
 }

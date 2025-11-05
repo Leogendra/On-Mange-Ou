@@ -289,8 +289,8 @@ class RandomChooserMap {
             removeMenuAndCleanup();
         });
 
-    const chooseConfigOption = document.createElement("button");
-    chooseConfigOption.textContent = this.options.text?.loadCustomConfig ?? "Load configuration";
+        const chooseConfigOption = document.createElement("button");
+        chooseConfigOption.textContent = this.options.text?.loadCustomConfig ?? "Load configuration";
         chooseConfigOption.className = "reset-menu-item";
         chooseConfigOption.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -307,11 +307,25 @@ class RandomChooserMap {
             removeMenuAndCleanup();
         });
 
+        const aboutOption = document.createElement("button");
+        aboutOption.textContent = this.options.text?.about ?? "About / GitHub";
+        aboutOption.className = "reset-menu-item";
+        aboutOption.addEventListener("click", (e) => {
+            e.stopPropagation();
+            try {
+                window.open("https://github.com/Leogendra/On-Mange-Ou", "_blank");
+            }
+            catch (err) {
+                window.location.href = "https://github.com/Leogendra/On-Mange-Ou";
+            }
+            removeMenuAndCleanup();
+        });
+
         menu.appendChild(exportDataOption);
         menu.appendChild(importDataOption);
-    menu.appendChild(exportUrlOption);
-    menu.appendChild(chooseConfigOption);
-    menu.appendChild(changeMapStyleOption);
+        menu.appendChild(exportUrlOption);
+        menu.appendChild(chooseConfigOption);
+        menu.appendChild(changeMapStyleOption);
         menu.appendChild(toggleWeightsOption);
         
         if (weightsEnabled) {
@@ -320,6 +334,7 @@ class RandomChooserMap {
         }
         
         menu.appendChild(resetRestaurantsOption);
+        menu.appendChild(aboutOption);
 
         const rect = button.getBoundingClientRect();
         menu.style.position = "fixed";
